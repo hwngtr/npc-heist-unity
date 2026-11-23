@@ -92,6 +92,7 @@ namespace HeistSim.Market
         private LineRenderer _lastSeenRing;
         private Material[] _coneBaseMaterials = Array.Empty<Material>();
         private Material[] _coneAlertMaterials = Array.Empty<Material>();
+        private NavigationRuntime _navigation;
 
         /// <summary>The live game, one per shift.</summary>
         public HeistGame Game => _game;
@@ -112,6 +113,7 @@ namespace HeistSim.Market
             SnapCameraCones();
             ResolveCamera();
             SnapCameraToPlayer();
+            EnsureNavigation();
         }
 
         private void Update()
@@ -141,7 +143,8 @@ namespace HeistSim.Market
             _game.Step(dt, input);
             var snapshot = _game.Snapshot();
             SyncActors(snapshot);
-            FollowCamera();
+            FollowCamera(dt);
+            _navigation?.Refresh(snapshot, _camera, dt);
 
             if (_frame % HudFrameInterval == 0 || toggle)
             {
@@ -171,6 +174,7 @@ namespace HeistSim.Market
             _lastChannelKind = null;
             _lastChannelResult = ChannelResult.None;
             _lastGuardState = "patrol";
+            _orthographicSize = FollowOrthographicSize;
             if (hud != null)
             {
                 hud.ClearFeed();
@@ -179,6 +183,7 @@ namespace HeistSim.Market
 
             SyncActors(_game.Snapshot());
             SnapCameraToPlayer();
+            _navigation?.ResetState();
         }
 
         private HeistGame CreateGame()
@@ -672,7 +677,7 @@ namespace HeistSim.Market
             _camera.transform.rotation = Quaternion.LookRotation(-CameraOffset.normalized, Vector3.up);
         }
 
-        private void FollowCamera()
+        private void FollowCamera(float dt)
         {
             if (_camera == null || playerRoot == null)
             {
@@ -680,9 +685,20 @@ namespace HeistSim.Market
             }
 
             var target = playerRoot.position + CameraOffset;
-            var t = 1f - Mathf.Exp(-CameraSmoothing * Mathf.Min(Time.deltaTime, MaxDeltaTime));
-            _camera.transform.position = Vector3.Lerp(_camera.transform.position, target, t);
+            _camera.transform.position = CameraFollowMath.Smooth(
+                _camera.transform.position, target, dt, CameraSmoothing, MaxDeltaTime);
             _camera.transform.rotation = Quaternion.LookRotation(-CameraOffset.normalized, Vector3.up);
+        }
+
+        private void EnsureNavigation()
+        {
+            _navigation ??= new NavigationRuntime(transform);
+        }
+
+        private void OnDestroy()
+        {
+            _navigation?.Dispose();
+            _navigation = null;
         }
 
         private static Transform FindDeep(Transform root, string name)

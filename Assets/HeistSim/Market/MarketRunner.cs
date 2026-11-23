@@ -468,17 +468,41 @@ namespace HeistSim.Market
             return GuiPressed(KeyCode.R) || GuiPressed(KeyCode.Tab) || GuiPressed(KeyCode.B);
         }
 
+        /// <summary>Maps screen-relative WASD onto world tile movement using the camera ground axes.</summary>
+        public static Vector2 MapCameraInput(Vector2 cameraRight, Vector2 cameraUp, float right, float forward)
+        {
+            var r = cameraRight.sqrMagnitude < 1e-6f ? new Vector2(1f, -1f).normalized : cameraRight.normalized;
+            var u = cameraUp.sqrMagnitude < 1e-6f ? new Vector2(-1f, -1f).normalized : cameraUp.normalized;
+            var v = r * right + u * forward;
+            return v.sqrMagnitude > 1f ? v.normalized : v;
+        }
+
+        private Vector2 CameraInput(float right, float forward)
+        {
+            if (_camera == null)
+            {
+                return MapCameraInput(default, default, right, forward);
+            }
+
+            return MapCameraInput(
+                new Vector2(_camera.transform.right.x, _camera.transform.right.z),
+                new Vector2(_camera.transform.up.x, _camera.transform.up.z),
+                right,
+                forward);
+        }
+
         private void ReadKeys(out HeistInput input, out bool reset, out bool toggle)
         {
             if (_guiKeys.Count > 0 || HasRecentGuiEdge())
             {
-                var i = (GuiHeld(KeyCode.D) || GuiHeld(KeyCode.RightArrow) ? 1f : 0f)
+                var right = (GuiHeld(KeyCode.D) || GuiHeld(KeyCode.RightArrow) ? 1f : 0f)
                     - (GuiHeld(KeyCode.A) || GuiHeld(KeyCode.LeftArrow) ? 1f : 0f);
-                var j = (GuiHeld(KeyCode.S) || GuiHeld(KeyCode.DownArrow) ? 1f : 0f)
-                    - (GuiHeld(KeyCode.W) || GuiHeld(KeyCode.UpArrow) ? 1f : 0f);
+                var forward = (GuiHeld(KeyCode.W) || GuiHeld(KeyCode.UpArrow) ? 1f : 0f)
+                    - (GuiHeld(KeyCode.S) || GuiHeld(KeyCode.DownArrow) ? 1f : 0f);
+                var dir = CameraInput(right, forward);
                 input = new HeistInput(
-                    i,
-                    j,
+                    dir.x,
+                    dir.y,
                     GuiHeld(KeyCode.E) || GuiHeld(KeyCode.Space),
                     GuiHeld(KeyCode.C),
                     GuiHeld(KeyCode.LeftShift) || GuiHeld(KeyCode.RightShift));
@@ -496,13 +520,14 @@ namespace HeistSim.Market
             var keyboard = Keyboard.current;
             if (keyboard != null)
             {
-                var i = (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed ? 1f : 0f)
+                var right = (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed ? 1f : 0f)
                     - (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed ? 1f : 0f);
-                var j = (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed ? 1f : 0f)
-                    - (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed ? 1f : 0f);
+                var forward = (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed ? 1f : 0f)
+                    - (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed ? 1f : 0f);
+                var dir = CameraInput(right, forward);
                 input = new HeistInput(
-                    i,
-                    j,
+                    dir.x,
+                    dir.y,
                     keyboard.eKey.isPressed || keyboard.spaceKey.isPressed,
                     keyboard.cKey.isPressed,
                     keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed);
@@ -521,13 +546,14 @@ namespace HeistSim.Market
 
             try
             {
-                var li = (UnityEngine.Input.GetKey(KeyCode.D) || UnityEngine.Input.GetKey(KeyCode.RightArrow) ? 1f : 0f)
+                var right = (UnityEngine.Input.GetKey(KeyCode.D) || UnityEngine.Input.GetKey(KeyCode.RightArrow) ? 1f : 0f)
                     - (UnityEngine.Input.GetKey(KeyCode.A) || UnityEngine.Input.GetKey(KeyCode.LeftArrow) ? 1f : 0f);
-                var lj = (UnityEngine.Input.GetKey(KeyCode.S) || UnityEngine.Input.GetKey(KeyCode.DownArrow) ? 1f : 0f)
-                    - (UnityEngine.Input.GetKey(KeyCode.W) || UnityEngine.Input.GetKey(KeyCode.UpArrow) ? 1f : 0f);
+                var forward = (UnityEngine.Input.GetKey(KeyCode.W) || UnityEngine.Input.GetKey(KeyCode.UpArrow) ? 1f : 0f)
+                    - (UnityEngine.Input.GetKey(KeyCode.S) || UnityEngine.Input.GetKey(KeyCode.DownArrow) ? 1f : 0f);
+                var dir = CameraInput(right, forward);
                 input = new HeistInput(
-                    li,
-                    lj,
+                    dir.x,
+                    dir.y,
                     UnityEngine.Input.GetKey(KeyCode.E) || UnityEngine.Input.GetKey(KeyCode.Space),
                     UnityEngine.Input.GetKey(KeyCode.C),
                     UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift));

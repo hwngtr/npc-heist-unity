@@ -45,6 +45,7 @@ namespace HeistSim.Market
         private bool _lastCamerasDisabled;
         private bool _lastVitrineOpen;
         private bool _inputFallbackWarned;
+        private bool _legacyInputWarned;
 
         /// <summary>The live game, one per shift.</summary>
         public HeistGame Game => _game;
@@ -347,22 +348,39 @@ namespace HeistSim.Market
             {
                 _inputFallbackWarned = true;
                 Debug.LogWarning(
-                    "MarketRunner: no Input System keyboard device (Project Settings Player Active Input Handling is Input Manager). "
-                    + "Falling back to the legacy key reader so the scene stays playable. Set Active Input Handling to Both to use Keyboard.current.");
+                    "MarketRunner: no Input System keyboard device. Trying the legacy key reader. "
+                    + "If this repeats with an exception, set Active Input Handling to Both in Player Settings.");
             }
 
-            var li = (UnityEngine.Input.GetKey(KeyCode.D) || UnityEngine.Input.GetKey(KeyCode.RightArrow) ? 1f : 0f)
-                - (UnityEngine.Input.GetKey(KeyCode.A) || UnityEngine.Input.GetKey(KeyCode.LeftArrow) ? 1f : 0f);
-            var lj = (UnityEngine.Input.GetKey(KeyCode.S) || UnityEngine.Input.GetKey(KeyCode.DownArrow) ? 1f : 0f)
-                - (UnityEngine.Input.GetKey(KeyCode.W) || UnityEngine.Input.GetKey(KeyCode.UpArrow) ? 1f : 0f);
-            input = new HeistInput(
-                li,
-                lj,
-                UnityEngine.Input.GetKey(KeyCode.E) || UnityEngine.Input.GetKey(KeyCode.Space),
-                UnityEngine.Input.GetKey(KeyCode.C),
-                UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift));
-            reset = UnityEngine.Input.GetKeyDown(KeyCode.R);
-            toggle = UnityEngine.Input.GetKeyDown(KeyCode.Tab) || UnityEngine.Input.GetKeyDown(KeyCode.B);
+            try
+            {
+                var li = (UnityEngine.Input.GetKey(KeyCode.D) || UnityEngine.Input.GetKey(KeyCode.RightArrow) ? 1f : 0f)
+                    - (UnityEngine.Input.GetKey(KeyCode.A) || UnityEngine.Input.GetKey(KeyCode.LeftArrow) ? 1f : 0f);
+                var lj = (UnityEngine.Input.GetKey(KeyCode.S) || UnityEngine.Input.GetKey(KeyCode.DownArrow) ? 1f : 0f)
+                    - (UnityEngine.Input.GetKey(KeyCode.W) || UnityEngine.Input.GetKey(KeyCode.UpArrow) ? 1f : 0f);
+                input = new HeistInput(
+                    li,
+                    lj,
+                    UnityEngine.Input.GetKey(KeyCode.E) || UnityEngine.Input.GetKey(KeyCode.Space),
+                    UnityEngine.Input.GetKey(KeyCode.C),
+                    UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift));
+                reset = UnityEngine.Input.GetKeyDown(KeyCode.R);
+                toggle = UnityEngine.Input.GetKeyDown(KeyCode.Tab) || UnityEngine.Input.GetKeyDown(KeyCode.B);
+            }
+            catch (InvalidOperationException)
+            {
+                if (!_legacyInputWarned)
+                {
+                    _legacyInputWarned = true;
+                    Debug.LogWarning(
+                        "MarketRunner: legacy input is disabled in Player Settings. No keyboard input is available. "
+                        + "Set Active Input Handling to Both and restart the editor.");
+                }
+
+                input = default;
+                reset = false;
+                toggle = false;
+            }
         }
     }
 }

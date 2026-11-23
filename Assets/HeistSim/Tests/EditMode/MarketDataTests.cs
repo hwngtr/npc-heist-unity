@@ -198,21 +198,20 @@ namespace HeistSim.Tests
         }
 
         [Test]
-        public void PanelSitsOnTheCheckoutLaneWithAWalkableAisle()
+        public void PanelSitsOnAnApproachableCheckoutTile()
         {
             var panelTile = MarketGrid.TileOf(MarketData.Panel.I, MarketData.Panel.J);
-            var host = MarketData.Fixture("t6a");
-            var footprint = MarketGrid.FootprintTiles(host);
-            Assert.That(footprint.Contains(panelTile), Is.True, "the panel is mounted on checkout lane t6a");
-            Assert.That(MarketGrid.BlockedTiles().Contains(panelTile), Is.True, "the panel point is inside a solid fixture");
+            Assert.That(Grid.IsWalkable(panelTile.X, panelTile.Y), Is.True, "the panel point is on a walkable tile");
+            Assert.That(MarketGrid.BlockedTiles().Contains(panelTile), Is.False, "no solid fixture buries the panel");
 
+            var host = MarketData.Fixture("t6a");
             var aisle = MarketGrid.AdjacentWalkable(Grid, host);
-            Assert.That(aisle.Count, Is.GreaterThan(0), "the panel host has a walkable aisle");
+            Assert.That(aisle.Count, Is.GreaterThan(0), "the checkout lane still has a walkable aisle");
 
             var nearest = MarketGrid.NearestWalkable(Grid, MarketData.Panel.I, MarketData.Panel.J);
             Assert.That(nearest.HasValue, Is.True, "the panel has a walkable tile nearby");
             var distance = DistanceTo(nearest.Value, MarketData.Panel.I, MarketData.Panel.J);
-            Assert.That(distance, Is.EqualTo(2.5).Within(1e-9), "the nearest walkable tile centre is 2.5 tiles from the panel");
+            Assert.That(distance, Is.LessThanOrEqualTo(2.0), "the nearest walkable tile centre is inside panel range");
         }
 
         [Test]

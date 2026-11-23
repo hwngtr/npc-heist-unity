@@ -21,7 +21,7 @@ namespace HeistSim.Market.Editor
         Sphere,
     }
 
-    /// <summary>One of the seven riso ink roles shared with the LookD post pass.</summary>
+    /// <summary>Riso ink roles shared with the LookD post pass, extended by the two half tone drums.</summary>
     public enum InkRole
     {
         /// <summary>Paper stock, #f3ebdd.</summary>
@@ -30,12 +30,16 @@ namespace HeistSim.Market.Editor
         Card,
         /// <summary>Midnight key plate, #344a80.</summary>
         Key,
+        /// <summary>Half shade ink, #56628a.</summary>
+        InkBlue2,
         /// <summary>Teal drum, including glass and green tints.</summary>
         Teal,
         /// <summary>Sun drum, including yellow, oak and brass tints.</summary>
         Sun,
         /// <summary>Coral drum, including red and walnut tints.</summary>
         Coral,
+        /// <summary>Deep coral rule, #a8402d.</summary>
+        CoralInk,
         /// <summary>Bot black, including charcoal tints.</summary>
         Black,
     }
@@ -331,6 +335,13 @@ namespace HeistSim.Market.Editor
                 B(1.32f, 0.25f, 0.98f, 0.45f, 0.42f, 0.18f, InkRole.Card),
                 B(0.16f, 0.22f, 1.34f, 0.4f, 0.06f, 0.04f, InkRole.Sun),
                 B(0.76f, 0.22f, 1.34f, 0.4f, 0.06f, 0.04f, InkRole.Sun),
+                // six cone topped buns, three on each lower tray tier
+                Cone(0.18f, 0.3f, 0.63f, 0.24f, 0.16f, InkRole.Sun),
+                Cone(0.78f, 0.3f, 0.63f, 0.24f, 0.16f, InkRole.Coral),
+                Cone(1.38f, 0.3f, 0.63f, 0.24f, 0.16f, InkRole.Sun),
+                Cone(0.18f, 0.3f, 1.16f, 0.24f, 0.16f, InkRole.Coral),
+                Cone(0.78f, 0.3f, 1.16f, 0.24f, 0.16f, InkRole.Sun),
+                Cone(1.38f, 0.3f, 1.16f, 0.24f, 0.16f, InkRole.CoralInk),
             },
             // web/js/market.js line 159
             ["action-table"] = new[]
@@ -470,6 +481,10 @@ namespace HeistSim.Market.Editor
                 B(0f, 0f, 0.24f, 0.7f, 0.5f, 0.04f, InkRole.Black),
                 P(0.16f, 0.25f, 0.28f, 0.3f, 0.25f, 0.42f, 0.05f, InkRole.Black, false),
                 P(0.54f, 0.25f, 0.28f, 0.4f, 0.25f, 0.42f, 0.05f, InkRole.Black, false),
+                // groceries inside the basket: paper milk carton, teal tin and a sun baguette
+                Prod(0.05f, 0.08f, 0.28f, 0.2f, 0.16f, 0.2f, InkRole.Paper),
+                Tin(0.29f, 0.08f, 0.28f, 0.16f, 0.22f, InkRole.Teal),
+                Prod(0.49f, 0.1f, 0.28f, 0.16f, 0.22f, 0.16f, InkRole.Sun),
             },
             // web/js/market.js line 559
             ["pfand-machine"] = new[]
@@ -488,6 +503,11 @@ namespace HeistSim.Market.Editor
                 P(0f, 0f, 0f, 0f, 0f, 2.35f, 0.0625f, InkRole.Key, false),
                 B(0f, 0f, 2.1f, 1.3f, 0.1f, 0.46f, InkRole.Sun),
                 B(0f, 0f, 2.04f, 1.3f, 0.12f, 0.06f, InkRole.Key),
+                // department signage reads as ink bars and a key icon, no floating text
+                B(0.08f, 0.055f, 2.2f, 0.24f, 0.02f, 0.24f, InkRole.Key),
+                B(0.42f, 0.055f, 2.2f, 0.76f, 0.02f, 0.05f, InkRole.CoralInk),
+                B(0.42f, 0.055f, 2.32f, 0.6f, 0.02f, 0.05f, InkRole.InkBlue2),
+                B(0.42f, 0.055f, 2.44f, 0.42f, 0.02f, 0.05f, InkRole.Teal),
             },
             // web/js/market.js line 587
             ["store-sign"] = new[]
@@ -612,8 +632,8 @@ namespace HeistSim.Market.Editor
                 C(0.86f, 0.28f, 1.2f, 0.09f, 0.2f, InkRole.Card),
                 C(1.14f, 0.28f, 1.2f, 0.09f, 0.2f, InkRole.Card),
                 B(0.2f, 0.2f, 1.44f, 1.4f, 0.12f, 0.22f, InkRole.Sun),
-                C(0.4f, 1.05f, 0f, 0.2f, 0.62f, InkRole.Card),
-                C(1.3f, 1.05f, 0f, 0.2f, 0.62f, InkRole.Card),
+                C(0.4f, 0.7f, 0f, 0.2f, 0.62f, InkRole.Card),
+                C(1.3f, 0.7f, 0f, 0.2f, 0.62f, InkRole.Card),
             },
             // web/js/market.js line 759
             ["deli-counter"] = new[]
@@ -670,14 +690,26 @@ namespace HeistSim.Market.Editor
                 B(0.06f, 0.56f, 0.12f, 1.18f, 0.44f, 0.9f, InkRole.Key),
                 B(0.2f, 0.24f, 1.02f, 0.88f, 0.1f, 0.06f, InkRole.Sun),
                 B(0.2f, 0.7f, 1.02f, 0.88f, 0.1f, 0.06f, InkRole.Sun),
+                // bottle caps standing on the upper crate lip, one per ink drum
+                Tin(0.22f, 0.22f, 1.08f, 0.12f, 0.08f, InkRole.Teal),
+                Tin(0.5f, 0.22f, 1.08f, 0.12f, 0.08f, InkRole.Sun),
+                Tin(0.78f, 0.22f, 1.08f, 0.12f, 0.08f, InkRole.Coral),
+                Tin(1.05f, 0.22f, 1.08f, 0.12f, 0.08f, InkRole.CoralInk),
             },
             // web/js/market.js line 835
             ["floral-stand"] = new[]
             {
-                C(0.4f, 0.02f, 0.4f, 0.34f, 0.52f, InkRole.Card),
+                C(0.4f, 0.4f, 0.4f, 0.32f, 0.52f, InkRole.Card),
                 P(0.4f, 0.5f, 0.4f, 0.4f, 0.5f, 1.24f, 0.0469f, InkRole.Teal, false),
-                C(0.4f, 1.24f, 0.4f, 0.22f, 0.14f, InkRole.Coral),
+                C(0.4f, 0.5f, 1.24f, 0.22f, 0.14f, InkRole.Coral),
                 B(0.44f, 0.2f, 0.72f, 0.28f, 0.16f, 0.04f, InkRole.Sun),
+                // three cut stems, each with its own bloom above the bucket rim
+                Cyl(0.2f, 0.18f, 0.5f, 0.02f, 0.56f, InkRole.Teal),
+                Ball(0.2f, 0.18f, 1.02f, 0.16f, InkRole.Coral),
+                Cyl(0.4f, 0.14f, 0.5f, 0.02f, 0.6f, InkRole.Teal),
+                Ball(0.4f, 0.14f, 1.06f, 0.16f, InkRole.Sun),
+                Cyl(0.58f, 0.18f, 0.5f, 0.02f, 0.58f, InkRole.Teal),
+                Ball(0.58f, 0.18f, 1.04f, 0.16f, InkRole.CoralInk),
             },
             // web/js/market.js line 847
             ["seasonal-display"] = new[]
@@ -686,6 +718,10 @@ namespace HeistSim.Market.Editor
                 B(0.14f, 0.66f, 0.16f, 1.52f, 0.18f, 0.82f, InkRole.Coral),
                 B(0.34f, 0.84f, 0.3f, 1.12f, 0.18f, 0.6f, InkRole.Sun),
                 B(0.58f, 1.02f, 0.46f, 0.64f, 0.2f, 0.34f, InkRole.Teal),
+                // heaped produce balls on the upper tiers: sun, coral and teal
+                Ball(0.4f, 0.3f, 1.16f, 0.3f, InkRole.Sun),
+                Ball(0.82f, 0.3f, 1.16f, 0.3f, InkRole.Coral),
+                Ball(1.24f, 0.3f, 1.16f, 0.3f, InkRole.Teal),
             },
             // web/js/market.js line 859
             ["dump-bin"] = new[]
@@ -699,9 +735,9 @@ namespace HeistSim.Market.Editor
             ["hand-wash"] = new[]
             {
                 B(0f, 0f, 0f, 0.7f, 0.86f, 0.56f, InkRole.Paper),
-                B(0.1f, 0.86f, 0.1f, 0.5f, 0.7f, 0.08f, InkRole.Teal),
-                C(0.35f, 0.94f, 0.4f, 0.05f, 0.3f, InkRole.Key),
-                C(0.5f, 0.9f, 0.46f, 0.09f, 0.12f, InkRole.Coral),
+                B(0.1f, 0.12f, 0.1f, 0.5f, 0.62f, 0.08f, InkRole.Teal),
+                C(0.35f, 0.7f, 0.4f, 0.05f, 0.3f, InkRole.Key),
+                C(0.5f, 0.7f, 0.46f, 0.09f, 0.12f, InkRole.Coral),
             },
             // web/js/data.js line 659
             ["server-rack"] = new[]
@@ -757,7 +793,7 @@ namespace HeistSim.Market.Editor
                 D(-0.13f, -0.46f, 0.58f, 2.4f, InkRole.Paper), // robot.js line 83 left paper eye
                 D(0.13f, -0.46f, 0.58f, 2.4f, InkRole.Paper), // robot.js line 83 right paper eye
                 C(0f, 0f, 1.12f, 0.38f, 0.08f, InkRole.Key), // market-app.js line 1046 detective blue cap
-                D(0f, 0f, 1.17f, 2.8f, InkRole.Sun), // market-app.js line 1050 gold badge
+                new DetailPart(DetailPrimitive.Disc, new Vector3(0f, 1.17f, 0f), new Vector3(0.38f, 0.02f, 0.38f), InkRole.Sun, false), // enlarged gold badge
             },
             // staff role: bot parts from robot.js, mark from market-app.js as cited.
             ["staff"] = new[]
@@ -767,7 +803,7 @@ namespace HeistSim.Market.Editor
                 D(-0.13f, -0.46f, 0.58f, 2.4f, InkRole.Paper), // robot.js line 83 left paper eye
                 D(0.13f, -0.46f, 0.58f, 2.4f, InkRole.Paper), // robot.js line 83 right paper eye
                 C(0f, 0f, 1.12f, 0.38f, 0.08f, InkRole.Sun), // market-app.js line 1046 staff sun cap
-                D(0f, 0f, 1.17f, 2.8f, InkRole.Coral), // market-app.js line 1050 coral S mark
+                new DetailPart(DetailPrimitive.Disc, new Vector3(0f, 1.17f, 0f), new Vector3(0.38f, 0.02f, 0.38f), InkRole.Coral, false), // enlarged coral S mark
             },
         };
 

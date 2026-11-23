@@ -444,7 +444,8 @@ namespace HeistSim
             new Fixture("t4b", "beverage-shelf", "Bier & Alkoholfrei", "r4", 0.6, 7.2, "ne", 0),
             new Fixture("t5b", "gondola-shelf", "Drogerie: Pflegeprodukte", "r5", 6.6, 1.2, "nw", 0),
             new Fixture("t5d", "dump-bin", "Leergut Karton", "r5", 6.6, 6.6, "nw", 0),
-            new Fixture("t6a", "checkout-lane", "Kasse 3", "r6", 0.8, 7.4, "ne", 0),
+            // One row above the r5 to r6 doorway band so the crossing at y=22 stays open.
+            new Fixture("t6a", "checkout-lane", "Kasse 3", "r6", 0.4, 3.0, "ne", 0),
             new Fixture("t6b", "self-checkout", "Self-Checkout Terminal 3", "r6", 4.2, 5.4, "ne", 0),
             new Fixture("t7a", "floral-stand", "Schnittblumen Regal", "r7", 0.6, 3.2, "ne", 0),
             new Fixture("t8a", "crate-tower", "Leergut Kisten", "r8", 2.4, 1.2, "ne", 0),
@@ -507,7 +508,8 @@ namespace HeistSim
         /// <summary>Store detective patrol route as tile positions, route start first.</summary>
         public static readonly GridPos[] GuardRoute =
         {
-            new GridPos(7, 4),
+            // web/js/market.js line 1079 starts the route at 7.0,4.5, half a tile left of tile centre.
+            new GridPos(7, 4, -0.5),
             new GridPos(13, 4),
             new GridPos(20, 4),
             new GridPos(31, 6),

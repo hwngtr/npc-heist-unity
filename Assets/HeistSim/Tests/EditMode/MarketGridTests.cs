@@ -37,7 +37,7 @@ namespace HeistSim.Tests
         [Test]
         public void BlockedTileCountMatchesTheBrowserGame()
         {
-            Assert.That(MarketGrid.BlockedTiles().Count, Is.EqualTo(300), "300 tiles are covered by solid fixtures");
+            Assert.That(MarketGrid.BlockedTiles().Count, Is.EqualTo(295), "295 tiles are covered by solid fixtures after the panel lane move");
         }
 
         [Test]

@@ -1,0 +1,435 @@
+[UnityConnectServicesConfig] Local config successfully read: "/usr/share/unity3d/config/services-config.json"
+[UnityConnectServicesConfig] Service configuration:
+    "servicesConfigBaseUrl": "",
+    "disableServicesWindow": false,
+    "disableUserLogin": false,
+    "entitlementCacheTimeoutInSeconds": 60,
+    "clientConnectTimeoutSec": 60,
+    "clientHandshakeTimeoutSec": 30,
+    "clientResolveEntitlementsTimeoutSec": 30,
+    "clientUpdateLicenseTimeoutSec": 30,
+    "licensingServiceBaseUrl": "",
+    "enableProxyAutoconfig": "false"
+
+Unity Editor version:    6000.6.10f1 (40e81493c67d)
+Branch:                  6000.6/staging
+Build type:              Release
+Batch mode:              YES
+System name:             Linux
+Distro version:          #1 SMP PREEMPT_DYNAMIC Tue, 17 Nov 2026 22:28:33 +0000
+Kernel version:          7.3.5-arch1-1
+Architecture:            x86_64
+Window Protocol:         Wayland (XWayland)
+Available memory:        23419 MB
+Date:                    2026-11-23T08:17:27Z
+VBCSCompilerPreWarmer: watching VBCSCompiler (PID 892750)
+VBCSCompilerPreWarmer: pre-warm launched (dotnet PID 892752)
+VBCSCompiler prewarm took 8.29 ms
+Initialize udev device monitor.
+[Licensing::Module] Trying to connect to existing licensing client channel...
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-hwngtr" at "2026-11-23T08:17:27.09466Z"
+[SignatureVerifier] Application signature verification not supported on this platform.
+[Licensing::Client] Error: HandshakeResponse reported an error:
+	ResponseCode: 505
+	ResponseStatus: Unsupported protocol version '1.19.0'.
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-hwngtr"
+[Licensing::IpcConnector] LicenseClient-hwngtr channel disconnected successfully.
+
+COMMAND LINE ARGUMENTS:
+[Licensing::IpcConnector] Channel LicenseClient-hwngtr-1.19.0 doesn't exist
+/home/hwngtr/AppImages/opencode.appimage
+-batchmode
+-nographics
+-projectPath
+/home/hwngtr/Projects/npc-heist-unity
+-executeMethod
+HeistSim.Market.Editor.MarketLevelBuilder.BuildLevelBatch
+-logFile
+tools/build-market.log
+Successfully changed project path to: /home/hwngtr/Projects/npc-heist-unity
+[Licensing::Module] Successfully launched the LicensingClient (PId: 892757)
+/home/hwngtr/Projects/npc-heist-unity
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-remapper-allocator-initial-capacity=32768"
+    "memorysetup-temp-allocator-size-gfx=262144"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-main-allocator-mimalloc-enabled=1"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+Logging is directed to a specific file, skipping project log.
+Player connection [139934018009856]  Target information:
+
+Player connection [139934018009856]  * "[IP] 192.168.1.11 [Port] 55504 [Flags] 2 [Guid] 2914831541 [EditorId] 2914831541 [Version] 1048832 [Id] LinuxEditor(16,172.16.0.2) [Debug] 1 [PackageName] LinuxEditor [ProjectName] Editor" 
+
+Player connection [139934018009856]  * "[IP] 172.19.0.1 [Port] 55504 [Flags] 2 [Guid] 2914831541 [EditorId] 2914831541 [Version] 1048832 [Id] LinuxEditor(16,172.16.0.2) [Debug] 1 [PackageName] LinuxEditor [ProjectName] Editor" 
+
+Player connection [139934018009856]  * "[IP] 172.17.0.1 [Port] 55504 [Flags] 2 [Guid] 2914831541 [EditorId] 2914831541 [Version] 1048832 [Id] LinuxEditor(16,172.16.0.2) [Debug] 1 [PackageName] LinuxEditor [ProjectName] Editor" 
+
+Player connection [139934018009856]  * "[IP] 192.168.122.1 [Port] 55504 [Flags] 2 [Guid] 2914831541 [EditorId] 2914831541 [Version] 1048832 [Id] LinuxEditor(16,172.16.0.2) [Debug] 1 [PackageName] LinuxEditor [ProjectName] Editor" 
+
+Player connection [139934018009856]  * "[IP] 172.16.0.2 [Port] 55504 [Flags] 2 [Guid] 2914831541 [EditorId] 2914831541 [Version] 1048832 [Id] LinuxEditor(16,172.16.0.2) [Debug] 1 [PackageName] LinuxEditor [ProjectName] Editor" 
+
+Player connection [139934018009856]  * "[IP] 100.82.67.234 [Port] 55504 [Flags] 2 [Guid] 2914831541 [EditorId] 2914831541 [Version] 1048832 [Id] LinuxEditor(16,172.16.0.2) [Debug] 1 [PackageName] LinuxEditor [ProjectName] Editor" 
+
+Player connection [139934018009856] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [139934018009856] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-hwngtr-1.19.0" at "2026-11-23T08:17:27.138297Z"
+[SignatureVerifier] Application signature verification not supported on this platform.
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.19.0+4cc3dda
+  Session Id:              08f2dfd4d2e34174b140ab931f3ffb31
+  Correlation Id:          b76a1c7e31999c6e67837e6be5531ca7
+  External correlation Id: 5399563807157390023
+  Machine Id:              jnr83HMLTMlsFLVISLw7ITDxN7Y=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-hwngtr-1.19.0" (connect: 0.04s, validation: 0.01s, handshake: 0.00s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-hwngtr-1.19.0-notifications" at "2026-11-23T08:17:27.147335Z"
+[Licensing::Module] Connected to LicensingClient (PId: 892757, launch time: 0.00, total connection time: 0.05s)
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: 18968553607239-sunwounds-UnityProStuXXXX
+  Product: Unity Student
+  Type: Assigned
+  Expiration: 2027-11-26T06:03:04Z
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.00
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Licensing Background thread has ended after 0.05s
+Initialising UDS system complete:
+  - System type: Client
+  - Resource namespace: 81557933462ae813e4087e38e20ecf7c
+  - Shared memory size: 1073741824
+  - Command buffer id: 1052624
+  - Command buffer size: 8192
+  - Hashmap size: 4194304
+  - Service connected: false
+[Package Manager] Connected to IPC stream "Upm-892729" after 0.2 seconds.
+[Licensing::Client] Successfully resolved entitlement details
+Library Redirect Path: Library/
+Launching Unity Data Store - /home/hwngtr/Unity/Hub/Editor/6000.6.10f1/Editor/Data/Tools/Unity.DataStore 
+Unity Data Store artifact dir = Library/DataStore, working dir = /home/hwngtr/Projects/npc-heist-unityUnity Data Store running and initialised
+[Physics::Module] Selected backend (deferred post-plugins).
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Initialize engine version: 6000.6.10f1 (40e81493c67d)
+[EntityIdStore] init: VM path (explicit commit), pageSize=4096, blockCount=262144, entitiesPerBlock=1024, blocksPerSlotPage=0, slots reserved=4294967296 bytes
+[Subsystems] Discovering subsystems at path /home/hwngtr/Unity/Hub/Editor/6000.6.10f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path /home/hwngtr/Projects/npc-heist-unity/Assets
+Forcing GfxDevice: Null
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+NullGfxDevice:
+    Version:  NULL 1.0 [1.0]
+    Renderer: Null Device
+    Vendor:   Unity Technologies
+Initialize mono
+Mono path[0] = '/home/hwngtr/Unity/Hub/Editor/6000.6.10f1/Editor/Data/Managed'
+Mono path[1] = '/home/hwngtr/Unity/Hub/Editor/6000.6.10f1/Editor/Data/BCLExtensions/runtime/netstandard2.1'
+Mono path[2] = '/home/hwngtr/Unity/Hub/Editor/6000.6.10f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-linux'
+Mono config path = '/home/hwngtr/Unity/Hub/Editor/6000.6.10f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56729
+CodeReloadManager initialized
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: /home/hwngtr/Unity/Hub/Editor/6000.6.10f1/Editor/Data/PlaybackEngines/WebGLSupport/UnityEditor.WebGL.Extensions.dll
+Register platform support module: /home/hwngtr/Unity/Hub/Editor/6000.6.10f1/Editor/Data/PlaybackEngines/LinuxStandaloneSupport/UnityEditor.LinuxStandalone.Extensions.dll
+Registered in 0.001861 seconds.
+Native extension for LinuxStandalone target not found
+Native extension for WebGL target not found
+Package Manager log level set to [2]
+[Licensing::Client] Successfully resolved entitlement details
+ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
+Scripting: successfully reloaded assembly
+- Finished resetting the current domain, in  1.437 seconds
+Domain Reload Profiling: 1932ms
+	BeginReloadAssembly (92ms)
+		CreateAndSetChildDomain (11ms)
+	RebuildCommonClasses (5ms)
+	RebuildNativeTypeToScriptingClass (11ms)
+	initialDomainReloadingComplete (70ms)
+	LoadAllAssembliesAndSetupDomain (316ms)
+		LoadAssemblies (81ms)
+		TypeCache.Refresh (214ms)
+			TypeCache.ScanAssembly (201ms)
+		AnalyzeDomain (1ms)
+	FinalizeReload (1438ms)
+		SetupLoadedEditorAssemblies (0ms)
+			BeforeProcessingInitializeOnLoad (112ms)
+			ProcessInitializeOnLoadAttributes (88ms)
+			ProcessInitializeOnLoadMethodAttributes (1079ms)
+[Licensing::Client] Successfully resolved entitlement details
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 19 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.2d.tilemap.extras@9.0.1 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.2d.tilemap.extras@9446f3c60919)
+    com.unity.inputsystem@1.20.1 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.inputsystem@2436e68c60c4)
+  Built-in packages:
+    com.unity.test-framework@1.8.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.test-framework@60031fc92218)
+    com.unity.2d.sprite@1.0.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.2d.sprite@7af11878b137)
+    com.unity.2d.tilemap@1.0.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.2d.tilemap@4c6661b4631a)
+    com.unity.textmeshpro@5.0.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.textmeshpro@5861d0377263)
+    com.unity.modules.ui@1.0.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.modules.ui)
+    com.unity.modules.imgui@1.0.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.modules.imgui)
+    com.unity.modules.physics2d@1.0.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.modules.physics2d)
+    com.unity.modules.jsonserialize@1.0.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.modules.jsonserialize)
+    com.unity.modules.uielements@1.0.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.modules.uielements)
+    com.unity.modules.hierarchycore@1.0.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.modules.hierarchycore)
+    com.unity.modules.physics@1.0.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.modules.physics)
+    com.unity.modules.animation@1.0.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.modules.animation)
+    com.unity.modules.physicscore2d@1.0.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.modules.physicscore2d)
+    com.unity.ugui@2.6.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.ugui@ad524959d157)
+    com.unity.modules.tilemap@1.0.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.modules.tilemap)
+    com.unity.ext.nunit@2.1.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.ext.nunit@508b95ff9afe)
+    com.unity.modules.audio@1.0.0 (location: /home/hwngtr/Projects/npc-heist-unity/Library/PackageCache/com.unity.modules.audio)
+[Package Manager] com.unity.textmeshpro is deprecated: This package is no longer supported. TextMeshPro functionalities are now included in the com.unity.ugui package. To continue using them, consider adding it to your project dependencies.
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.00 seconds
+Starting: /home/hwngtr/Unity/Hub/Editor/6000.6.10f1/Editor/Data/Tools/BuildPipeline/bee_backend --ipc --defer-dag-verification --dagfile="Library/Bee/2400b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: /home/hwngtr/Projects/npc-heist-unity
+ExitCode: 0 Duration: 0s92ms
+[309/379    0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+*** Tundra build success (0.07 seconds), 1 items updated, 379 evaluated
+DisplayProgressbar: Compiling Scripts
+Total cache size 48073848
+AssetDatabase: script compilation time: 0.473278s
+Total cache size after purge 48073848, took 00:00:00.0238242
+Begin MonoManager ReloadAssembly
+Native extension for LinuxStandalone target not found
+Native extension for WebGL target not found
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Scripting: successfully reloaded assembly
+- Finished resetting the current domain, in  0.468 seconds
+Domain Reload Profiling: 970ms
+	BeginReloadAssembly (187ms)
+		DisableScriptedObjects (14ms)
+		CreateAndSetChildDomain (52ms)
+	RebuildCommonClasses (8ms)
+	RebuildNativeTypeToScriptingClass (10ms)
+	initialDomainReloadingComplete (47ms)
+	LoadAllAssembliesAndSetupDomain (248ms)
+		LoadAssemblies (166ms)
+		TypeCache.Refresh (34ms)
+			TypeCache.ScanAssembly (28ms)
+		AnalyzeDomain (14ms)
+			BuildScriptInfoCaches (11ms)
+	FinalizeReload (469ms)
+		SetupLoadedEditorAssemblies (0ms)
+			BeforeProcessingInitializeOnLoad (106ms)
+			ProcessInitializeOnLoadAttributes (100ms)
+			ProcessInitializeOnLoadMethodAttributes (43ms)
+			AfterProcessingInitializeOnLoad (5ms)
+		AwakeInstancesAfterBackupRestoration (22ms)
+Starting new worker id: 0 with log in /home/hwngtr/Projects/npc-heist-unity/Logs/AssetImportWorkerHW0.log
+[UnityConnectServicesConfig] Local config successfully read: "/usr/share/unity3d/config/services-config.json"
+[UnityConnectServicesConfig] Service configuration:
+    "servicesConfigBaseUrl": "",
+    "disableServicesWindow": false,
+    "disableUserLogin": false,
+    "entitlementCacheTimeoutInSeconds": 60,
+    "clientConnectTimeoutSec": 60,
+    "clientHandshakeTimeoutSec": 30,
+    "clientResolveEntitlementsTimeoutSec": 30,
+    "clientUpdateLicenseTimeoutSec": 30,
+    "licensingServiceBaseUrl": "",
+    "enableProxyAutoconfig": "false"
+
+
+Asset Pipeline Refresh (id=6972a0d6e22bdc076b80c9683336e0bb): Total: 1.764 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	(Values over 0.05ms)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=712 ms
+		Asset DB Callback time: managed=21 ms, native=2 ms
+		Scripting: domain reloads=1, domain reload time=533 ms, compile time=475 ms, other=18 ms
+		Project Asset Count: scripts=370, non-scripts=508
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 1
+	InvokePackagesCallback: 2.772ms
+	ApplyChangesToAssetFolders: 0.174ms
+	Scan: 92.586ms
+	Collect global state as custom dependencies: 5.323ms
+	CategorizeScriptCompilationAssets: 6.284ms
+	ProcessAssetsWithTransientArtifactChanges: 21.415ms
+	CategorizeAssets: 8.323ms
+	CompileScripts: 475.264ms
+	ImportOutOfDateAssets: 513.953ms (469.948ms without children)
+		UnloadImportedAssets: 3.001ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.232ms
+		ImportSchedulerStart: 40.768ms
+	PostProcessAllAssets: 21.987ms
+		MonoPostProcessAllAssets: 21.897ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 8.124ms
+			SyncVS.PostprocessSyncProject 1.268ms
+			EditModeScopePostprocessor.OnPostprocessAllAssets 1.020ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 0.798ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 0.288ms
+			InputActionAssetPostprocessor.OnPostprocessAllAssets 0.264ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.192ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.185ms
+			ProjectSettingsPostprocessor.OnPostprocessAllAssets 0.161ms
+			RenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 0.085ms
+	UnloadStreamsBegin: 1.807ms
+	GenerateScriptTypeHashes: 1.111ms
+	GenerateScriptTypeSerializationHashes: 2.398ms
+	Untracked: 612.458ms
+
+Application.AssetDatabase Initial Refresh End
+Scanning for USB devices : 11.513ms
+Initializing Unity extensions:
+UpdateMenuTitleForLanguage: 10
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-npc-heist-unity
+Unloading 6 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 1490 unused Assets / (1.2 MB). Loaded Objects now: 2285.
+Memory consumption went from 135.7 MB to 134.5 MB.
+Total: 8.514849 ms (FindLiveObjects: 0.250900 ms CreateObjectMapping: 0.093886 ms MarkObjects: 7.047287 ms  DeleteObjects: 1.005275 ms)
+
+Asset Pipeline Refresh (id=de694becb4c6c6c3c9a6b7c207b91522): Total: 0.041 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+Launched and connected shader compiler UnityShaderCompiler after 0.01 seconds
+Unloading 16 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 2 unused Assets / (4.7 KB). Loaded Objects now: 2305.
+Memory consumption went from 135.1 MB to 135.1 MB.
+Total: 7.666087 ms (FindLiveObjects: 0.136156 ms CreateObjectMapping: 0.031218 ms MarkObjects: 7.333443 ms  DeleteObjects: 0.041878 ms)
+
+Importing 'GUID: 930300a541787f1c38f7b94a5945cc05 - Path: Assets/HeistSim/Market/Generated/Materials/MarketSun.mat' with importer (NativeFormatImporter)
+Imported 'GUID: 930300a541787f1c38f7b94a5945cc05' -> (Import Result ID: '069fa8cb5529605478f4cc74e0b6ff1e') in 0.003 seconds [static dependencies only]. Details - ImportResultOutputID=5b9407689f4e387930874a1d6df9b0d9 DependenciesID=afc9e33719dbaadd390394aef17ed3a0 StaticDependenciesID=ab3682e12d4bd0ee7f3c2f9e7545715b 
+Importing 'GUID: 46f17e42e0f9d08c987f796fcc4a7bca - Path: Assets/HeistSim/Market/Generated/Materials/MarketDitherPost.mat' with importer (NativeFormatImporter)
+Imported 'GUID: 46f17e42e0f9d08c987f796fcc4a7bca' -> (Import Result ID: '4305515227562bef6a262b1fdf63c140') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=6fbe1ca4aff981431bb06ac53f7c08f3 DependenciesID=84d4e58eb6448530e3d44e821d3a259b StaticDependenciesID=72f699348a3392bc100449e44487ae3d 
+Importing 'GUID: 3779a2ca4a4a19fc6bf4eda54b605be3 - Path: Assets/HeistSim/Market/Generated/Materials/MarketCoralInk.mat' with importer (NativeFormatImporter)
+Imported 'GUID: 3779a2ca4a4a19fc6bf4eda54b605be3' -> (Import Result ID: '08fdae2833293ae126a79e8c793e0733') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=4c84d742bdde1b0db45f6284f341eab1 DependenciesID=0d3d36c79c5780a2824f07ee010d2b35 StaticDependenciesID=c8e247f3aa5de29447761fb02ebbb12f 
+Importing 'GUID: e7d513ce3c8ab1981aa3fb0db0e89816 - Path: Assets/HeistSim/Market/Generated/Materials/MarketTeal.mat' with importer (NativeFormatImporter)
+Imported 'GUID: e7d513ce3c8ab1981aa3fb0db0e89816' -> (Import Result ID: 'b176e582fe7b6ef8c5b0c736c4678723') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=8be38d104d79422c788082501e2294c1 DependenciesID=49cf2be7e61a36ee6859cb62a43a41de StaticDependenciesID=0a73b884cb8152346239f73bb2eab93b 
+Importing 'GUID: 48bf952978d699a30bb952dc1acc802d - Path: Assets/HeistSim/Market/Generated/Materials/MarketWall.mat' with importer (NativeFormatImporter)
+Imported 'GUID: 48bf952978d699a30bb952dc1acc802d' -> (Import Result ID: 'd72b3bb2d980164d0c60ab0c7908e434') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=a61f2361d17fc586f9cade72e09b7011 DependenciesID=e177efd544cefc8cb6f14d088c185d4e StaticDependenciesID=95c6621b1c31fd6979325c1eff4f8a92 
+Importing 'GUID: 89eebf7cae59cf759b89cd5a5bcec894 - Path: Assets/HeistSim/Market/Generated/Materials/MarketInkBlue.mat' with importer (NativeFormatImporter)
+Imported 'GUID: 89eebf7cae59cf759b89cd5a5bcec894' -> (Import Result ID: 'ae09fe7b21bf4bc594656bb29ca0b591') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=1db89066eb03889eaf3003fe4791c6d0 DependenciesID=2e157cd8bbb81b2f0f8e37de908d9cc7 StaticDependenciesID=77dabff3e9f64dadac2d6006576912d5 
+Importing 'GUID: ed98cc22019808af2aa1150bdb8b3c85 - Path: Assets/HeistSim/Market/Generated/Materials/MarketFloor.mat' with importer (NativeFormatImporter)
+Imported 'GUID: ed98cc22019808af2aa1150bdb8b3c85' -> (Import Result ID: '24fd7204a9f0c1fd75df6b2634b35714') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=e47d3bc42e320bdeb1a69b5d1c96cf81 DependenciesID=9e9188f1a26f128cf2d66ca8387f1895 StaticDependenciesID=80dd9ca41b924eb6b1ef525724fbe9f9 
+Importing 'GUID: 2ea06b52261621ca9b2251feb871325f - Path: Assets/HeistSim/Market/Generated/Materials/MarketCoral.mat' with importer (NativeFormatImporter)
+Imported 'GUID: 2ea06b52261621ca9b2251feb871325f' -> (Import Result ID: 'ab16a458ade34975dda1078403818b05') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=76fe88d7738cb239e78855a13296f15f DependenciesID=7e4960d283199734985ff313a401051d StaticDependenciesID=9675767dbf729a716c1ed0c2533fb483 
+Importing 'GUID: 3e6db113b506f98a1b16fd1911f50c69 - Path: Assets/HeistSim/Market/Generated/Materials/MarketBlack.mat' with importer (NativeFormatImporter)
+Imported 'GUID: 3e6db113b506f98a1b16fd1911f50c69' -> (Import Result ID: '079f17a6bf3fccef9d7daa73bfc51d64') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=e5bf0843a1803e0356bf609e0d3aa2d1 DependenciesID=483d5bd03d994497e535fe392b39a867 StaticDependenciesID=9b3c97fe045438263c14048a2794dccb 
+Importing 'GUID: fed9ad7f6bc50d868b027304cac8643f - Path: Assets/HeistSim/Market/Generated/Materials/MarketInkBlue2.mat' with importer (NativeFormatImporter)
+Imported 'GUID: fed9ad7f6bc50d868b027304cac8643f' -> (Import Result ID: '1ba66e079c1567c7d50457bbf9806b62') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=deeb642c2b2bdc733f964039f39df75a DependenciesID=71d4d04bb9be6760d928d7888acb4e49 StaticDependenciesID=435dff5fd66d2b4c3d7bdf58b106b006 
+Importing 'GUID: ff3645ef1ca74b2bf92b29b2f503fea0 - Path: Assets/HeistSim/Market/Generated/Materials/MarketConeTeal.mat' with importer (NativeFormatImporter)
+Imported 'GUID: ff3645ef1ca74b2bf92b29b2f503fea0' -> (Import Result ID: '4973bbc7555e4991f47023eca498e94f') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=3697846d247997676c7a9050705ba206 DependenciesID=b3f9edf1ceb5f061ac1ec6540bee6113 StaticDependenciesID=0737661f6145cec371551f65be8ec27c 
+Importing 'GUID: 564eaef73eba36272a02bd7bc64307d0 - Path: Assets/HeistSim/Market/Resources/MarketSans.asset' with importer (NativeFormatImporter)
+Imported 'GUID: 564eaef73eba36272a02bd7bc64307d0' -> (Import Result ID: 'c44b3b12788bb32ca0da8cf36da1b164') in 0.004 seconds [static dependencies only]. Details - ImportResultOutputID=97620b93cc0571d1a5d122c37a040399 DependenciesID=6146f8813d3ba6c2e886df608d1dfc71 StaticDependenciesID=53f9e882e7eb196e1402f36e5f6968e1 
+Asset Pipeline Refresh (id=b85a5f0472d4fda7e830ee363d22708a): Total: 0.071 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Importing 'GUID: 5a1e469c1fed90216bc2d17f297ae75f - Path: Assets/HeistSim/Market/Market.unity' with importer (DefaultImporter)
+Imported 'GUID: 5a1e469c1fed90216bc2d17f297ae75f' -> (Import Result ID: '3bd006c7fbe8b95658b4b478e2bf1cee') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=bf9970abcc62b7cda0932fd83aa8cc3f DependenciesID=2031b46841f484cf7f4ad553bfa8aa70 StaticDependenciesID=80d15cb3dd58767835165b49228db186 
+Asset Pipeline Refresh (id=54451a7ecbc17c385856e31e651a51cc): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Asset Pipeline Refresh (id=c88c50e6b105f7846a8a18ac790156f4): Total: 0.021 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+Market level build complete: 78 fixtures, 16 loot markers, 6 cameras, scene Assets/HeistSim/Market/Market.unity
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /home/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:23)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HeistSim.Market.Editor.MarketLevelBuilder:BuildLevel () (at Assets/HeistSim/Market/Editor/MarketLevelBuilder.cs:54)
+HeistSim.Market.Editor.MarketLevelBuilder:BuildLevelBatch () (at Assets/HeistSim/Market/Editor/MarketLevelBuilder.cs:66)
+
+(Filename: Assets/HeistSim/Market/Editor/MarketLevelBuilder.cs Line: 54)
+
+Market batch build finished.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /home/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:23)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+HeistSim.Market.Editor.MarketLevelBuilder:BuildLevelBatch () (at Assets/HeistSim/Market/Editor/MarketLevelBuilder.cs:67)
+
+(Filename: Assets/HeistSim/Market/Editor/MarketLevelBuilder.cs Line: 67)
+
+MonoPathRemapper: Attempts to remap: 18134; Successful remaps: 0
+Worker ready: AssetImportWorkerHW0 0
+Serialized file version minimum: 23, current 23
+[UnityConnectServicesConfig] Service configuration:
+    "servicesConfigBaseUrl": "",
+    "disableServicesWindow": false,
+    "disableUserLogin": false,
+    "entitlementCacheTimeoutInSeconds": 60,
+    "clientConnectTimeoutSec": 60,
+    "clientHandshakeTimeoutSec": 30,
+    "clientResolveEntitlementsTimeoutSec": 30,
+    "clientUpdateLicenseTimeoutSec": 30,
+    "licensingServiceBaseUrl": "",
+    "enableProxyAutoconfig": "false"
+
+Clearing [MarketSans] dynamic font asset data.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /home/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:23)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+TMPro.EditorEventCallbacks/<>c:<InitializeFontAssetResourceChangeCallBacks>b__0_0 () (at ./Library/PackageCache/com.unity.ugui@ad524959d157/Editor/TMP/TMP_EditorResourceManager.cs:36)
+UnityEditor.EditorApplication:Internal_EditorApplicationQuit () (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:128)
+HeistSim.Market.Editor.MarketLevelBuilder:BuildLevelBatch () (at Assets/HeistSim/Market/Editor/MarketLevelBuilder.cs:68)
+
+(Filename: ./Library/PackageCache/com.unity.ugui@ad524959d157/Editor/TMP/TMP_EditorResourceManager.cs Line: 36)
+
+Importing 'GUID: 564eaef73eba36272a02bd7bc64307d0 - Path: Assets/HeistSim/Market/Resources/MarketSans.asset' with importer (NativeFormatImporter)
+Imported 'GUID: 564eaef73eba36272a02bd7bc64307d0' -> (Import Result ID: 'a197481dcefd211edf506d2913ce2366') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=97620b93cc0571d1a5d122c37a040399 DependenciesID=90412b4f5421d581c7ebcda5f999ba3c StaticDependenciesID=d9ed9b63b91c96b1ae7e148c6b6e38e3 
+Asset Pipeline Refresh (id=06176712af2df4033b07e43710c76a6a): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input Polling Thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-hwngtr-1.19.0-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-hwngtr-1.19.0 channel disconnected successfully.
+Lingering sessions upon destruction of worker manager
+Unity Data Store service was successfully shut down
+UDS shutting down local client system
+Shut down UDS service system complete
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+CodeReloadManager destroyed
+debugger-agent: Unable to listen on 49
+VBCSCompilerPreWarmer: requested VBCSCompiler shutdown
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1795421859735,"processId":892729,"allocatedMemory":7665410,"memoryLabels":[{"Default":202973},{"Permanent":16152},{"Thread":1052336},{"Manager":27473},{"VertexData":8},{"Geometry":416},{"Texture":24},{"Shader":836049},{"Material":132},{"GfxDevice":36104},{"Animation":1016},{"Audio":1280},{"FreeType":8},{"FontEngine":736},{"Physics":1970},{"Physics2D":16},{"Serialization":16568},{"Input":60256},{"JobScheduler":264},{"TextLib":280},{"Mono":80},{"ScriptingNativeRuntime":155088},{"BaseObject":51528},{"Resource":1268},{"Renderer":2496},{"Transform":4757},{"File":4236},{"WebCam":80},{"Culling":32},{"Terrain":11346},{"Wind":24},{"String":589685},{"StaticString":3808},{"Utility":2677584},{"Curl":2511},{"PoolAlloc":1960},{"AI":80},{"TypeTree":18285},{"ScriptManager":12688},{"CodeReload":448},{"RuntimeInitializeOnLoadManager":64},{"Sprites":102},{"SpriteAtlas":120},{"GI":7408},{"Director":8280},{"CloudService":7712},{"WebRequest":6654},{"VR":49554},{"SceneManager":640},{"Video":64},{"LazyScriptCache":32},{"Camera":729},{"Secure":9985},{"SerializationCache":9256},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57552},{"StaticSafetyDebugInfo":278528},{"Analytics":800},{"Hierarchy":1436},{"UIElements":40},{"CoreStats":14536},{"Identifiers":7152},{"EntityIdStore":33088},{"Gui":160},{"EditorUtility":75736},{"VersionControl":8},{"Undo":963},{"AssetDatabase":1235108},{"AssetImporter":40},{"EditorGi":328},{"UnityConnect":40449},{"Upm":1760},{"UpmDiagnostics":8},{"AssetCompliance":96},{"DrivenProperties":72},{"LocalIPC":156},{"ProfilerEditor":9746},{"CoreBusinessMetrics":2531},{"Windowing":480},{"Licensing":1272},{"AssetReference":32},{"IPCStream":32}]}

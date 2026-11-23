@@ -685,11 +685,11 @@ PlayerSettings:
   activeInputHandler: 3
   windowsGamepadBackendHint: 0
   enableDirectStorage: 0
-  cloudProjectId: 
+  cloudProjectId: e68360b6-e6e5-45c1-9378-913c736f84dc
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: 
-  organizationId: 
+  projectName: npc-heist-unity
+  organizationId: sunwounds
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}

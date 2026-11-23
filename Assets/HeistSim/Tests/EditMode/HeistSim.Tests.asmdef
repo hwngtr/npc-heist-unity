@@ -4,6 +4,8 @@
     "references": [
         "HeistSim",
         "HeistSim.Arena",
+        "HeistSim.Market",
+        "Unity.TextMeshPro",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

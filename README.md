@@ -33,3 +33,18 @@ Or in the editor under Window, General, Test Runner, EditMode, Run All.
 ## Port contract
 
 The C# controllers consume `GuardPercepts` and emit `GuardIntent`, mirroring `src/npc/sim/contracts.py` and `src/npc/sim/perception.py` in the source repo. The FSM table and BT structure mirror `src/npc/ai/fsm.py` and `src/npc/ai/bt.py` rule for rule. Parity is asserted by tests, not asserted by hand.
+
+## Play
+
+The playable market shift is `Assets/HeistSim/Market/Market.unity`. Rebuild it from the menu `Heist, Market, Build Level Scene`, then press Play.
+
+| Input | Action |
+| --- | --- |
+| WASD or arrows | sneak through the aisles |
+| Hold E | steal goods, cut the CCTV panel, use the de-tagger, force the vitrine |
+| C | crouch, slower and quieter |
+| Shift | sprint, faster but louder |
+| R | start a new shift |
+| Tab or B | switch the guard between the FSM and the BT controller |
+
+The HUD shows the heat tier, the loot value against the 190 quota, the bag, the five objectives, the guard state with its controller badge, the staff backup radio and the timed action progress. `Assets/HeistSim/Market/Captures/Market.png` is the review capture of the built scene.

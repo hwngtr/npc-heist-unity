@@ -24,9 +24,6 @@ namespace HeistSim.Market.Editor
         /// <summary>Gap kept between a camera visual and the floor edge, in tiles.</summary>
         private const float CameraEdgeInset = 0.5f;
 
-        /// <summary>Height of the CCTV camera visual centre above the floor, in tiles.</summary>
-        private const float CameraHeight = 2.62f;
-
         /// <summary>Rebuilds the market scene and saves it over the existing asset.</summary>
         [MenuItem("Heist/Market/Build Level Scene")]
         public static void BuildLevel()
@@ -114,7 +111,7 @@ namespace HeistSim.Market.Editor
             };
         }
 
-        private static Material FlatMaterial(string name, Color color)
+        internal static Material FlatMaterial(string name, Color color)
         {
             var path = MarketSceneSpec.MaterialsDir + "/" + name + ".mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -226,7 +223,7 @@ namespace HeistSim.Market.Editor
             Box(walls, "Back Wall", new Vector3(18f, 1.1f, 27.15f), new Vector3(36f, 2.2f, 0.3f), materials["wall"]);
             Box(walls, "Baseboard", new Vector3(18f, 0.17f, 26.97f), new Vector3(36f, 0.34f, 0.06f), materials["coral"]);
 
-            BuildFixtures(content, materials);
+            BuildFixtures(content);
             BuildCameras(content, materials, coneMesh, out var cones);
             BuildLoot(content, materials);
             BuildDevices(content, materials);
@@ -244,61 +241,17 @@ namespace HeistSim.Market.Editor
             runner.cameraCones = cones;
         }
 
-        private static void BuildFixtures(Transform content, Dictionary<string, Material> materials)
+        private static void BuildFixtures(Transform content)
         {
             var fixtures = NewGroup(content, MarketSceneSpec.FixturesGroup);
             foreach (var fixture in MarketData.Fixtures)
             {
-                var kind = MarketData.Kind(fixture.Kind);
-                MarketLayout.Footprint(kind, fixture.Face, out var widthI, out var depthJ);
+                var detail = DetailFactory.BuildFixture(fixture.Kind, fixture.Face);
+                detail.name = fixture.Id;
+                detail.transform.SetParent(fixtures, false);
                 var position = MarketLayout.ItemPosition(fixture);
-                var group = NewGroup(fixtures, fixture.Id);
-                group.position = new Vector3(position.x, 0f, position.y);
-
-                if (fixture.Id == "m_eas1")
-                {
-                    BuildEasGate(group, materials);
-                    continue;
-                }
-
-                if (fixture.Kind == "aisle-sign")
-                {
-                    Box(group, "Sign", new Vector3(0f, 2.25f, 0f), new Vector3(0.62f, 0.28f, 0.08f), materials["sun"]);
-                    continue;
-                }
-
-                if (kind.Place == "wall" || kind.Height <= 0.0)
-                {
-                    Box(group, "Plate", new Vector3(0f, 2.0f, 0f), new Vector3(widthI, 0.5f, 0.08f), materials["coralInk"]);
-                    continue;
-                }
-
-                var height = (float)kind.Height;
-                var baseY = kind.Place == "surface" ? 0.95f : 0f;
-                Box(group, "Body", new Vector3(0f, baseY + height * 0.5f, 0f), new Vector3(widthI, height, depthJ), InkFor(fixture.Kind, materials));
+                detail.transform.position = new Vector3(position.x, 0f, position.y);
             }
-        }
-
-        private static void BuildEasGate(Transform group, Dictionary<string, Material> materials)
-        {
-            Box(group, "Pillar A", new Vector3(0f, 0.76f, -0.6f), new Vector3(0.18f, 1.52f, 0.26f), materials["coral"]);
-            Box(group, "Pillar B", new Vector3(0f, 0.76f, 0.6f), new Vector3(0.18f, 1.52f, 0.26f), materials["coral"]);
-            Box(group, "Band", new Vector3(0f, 1.46f, 0f), new Vector3(0.14f, 0.14f, 1.34f), materials["coralInk"]);
-        }
-
-        private static Material InkFor(string kind, Dictionary<string, Material> materials)
-        {
-            return kind switch
-            {
-                "chilled-case" or "freezer-chest" or "freezer-wall" or "produce-island" or "hand-wash" => materials["teal"],
-                "checkout-lane" or "self-checkout" or "impulse-shelf" or "pallet-stack" or "pallet-cage"
-                    or "crate-tower" or "beverage-shelf" or "wine-rack" or "liquor-cabinet" or "pfand-machine"
-                    or "coffee-counter" or "dump-bin" or "shopping-cart" or "apple-crate" or "hand-basket"
-                    or "server-rack" => materials["inkBlue2"],
-                "action-table" or "floral-stand" or "seasonal-display" => materials["sun"],
-                "rewe-arch" => materials["coralInk"],
-                _ => materials["coral"],
-            };
         }
 
         private static void BuildCameras(Transform content, Dictionary<string, Material> materials, Mesh coneMesh, out Transform[] cones)
@@ -308,16 +261,15 @@ namespace HeistSim.Market.Editor
             for (var i = 0; i < MarketData.Cameras.Length; i++)
             {
                 var def = MarketData.Cameras[i];
-                var rig = NewGroup(cameras, def.Id);
+                var rig = DetailFactory.BuildCamera();
+                rig.name = def.Id;
+                rig.transform.SetParent(cameras, false);
                 var tileX = Mathf.Clamp((float)def.I, CameraEdgeInset, MarketData.WidthTiles - CameraEdgeInset);
                 var tileZ = Mathf.Clamp((float)def.J, CameraEdgeInset, MarketData.HeightTiles - CameraEdgeInset);
-                rig.position = new Vector3(tileX, 0f, tileZ);
-                Box(rig, "Mount", new Vector3(0f, CameraHeight * 0.5f, 0f), new Vector3(0.08f, CameraHeight, 0.08f), materials["black"]);
-                Box(rig, "Body", new Vector3(0f, CameraHeight, 0f), new Vector3(0.42f, 0.26f, 0.36f), materials["inkBlue"]);
-                Box(rig, "Lens", new Vector3(0f, CameraHeight - 0.04f, 0.22f), new Vector3(0.12f, 0.12f, 0.08f), materials["sun"]);
+                rig.transform.position = new Vector3(tileX, 0f, tileZ);
 
                 var coneObject = new GameObject(MarketSceneSpec.ConeChild);
-                coneObject.transform.SetParent(rig, false);
+                coneObject.transform.SetParent(rig.transform, false);
                 coneObject.transform.localPosition = new Vector3(0f, 0.06f, 0f);
                 coneObject.transform.localRotation = Quaternion.Euler(0f, -(float)def.BaseAngle * Mathf.Rad2Deg, 0f);
                 coneObject.transform.localScale = new Vector3((float)def.Range, 1f, (float)def.Range);
@@ -339,12 +291,10 @@ namespace HeistSim.Market.Editor
                 var fixture = MarketData.Fixture(loot.Id);
                 var position = MarketLayout.ItemPosition(fixture);
                 var height = MarketLayout.ItemHeight(fixture);
-                var marker = Cylinder(
-                    lootRoot,
-                    loot.Id,
-                    new Vector3(position.x, height + 0.04f, position.y),
-                    new Vector3(0.44f, 0.025f, 0.44f),
-                    materials["sun"]);
+                var marker = DetailFactory.BuildLoot(loot.Kind);
+                marker.name = loot.Id;
+                marker.transform.SetParent(lootRoot, false);
+                marker.transform.position = new Vector3(position.x, height + 0.04f, position.y);
                 marker.AddComponent<MarketLootMarker>().lootId = loot.Id;
             }
         }
@@ -374,24 +324,9 @@ namespace HeistSim.Market.Editor
             out Transform staff,
             out GuardVisionFan fan)
         {
-            player = NewGroup(actors, "Player");
-            player.position = new Vector3(HeistGame.PlayerStart.x, 0f, HeistGame.PlayerStart.y);
-            Primitive(player, "Base", PrimitiveType.Cylinder, new Vector3(0f, 0.02f, 0f), new Vector3(1f, 0.04f, 1f), materials["black"]);
-            Primitive(player, "Body", PrimitiveType.Capsule, new Vector3(0f, 0.675f, 0f), new Vector3(0.64f, 0.675f, 0.64f), materials["teal"]);
-            Primitive(player, "Cap", PrimitiveType.Cylinder, new Vector3(0f, 1.38f, 0f), new Vector3(0.7f, 0.05f, 0.7f), materials["sun"]);
-
-            guard = NewGroup(actors, "Guard");
-            guard.position = new Vector3(HeistGame.GuardStart.x, 0f, HeistGame.GuardStart.y);
-            guard.rotation = Quaternion.Euler(0f, -1.5f * Mathf.Rad2Deg, 0f);
-            Primitive(guard, "Base", PrimitiveType.Cylinder, new Vector3(0f, 0.02f, 0f), new Vector3(1f, 0.04f, 1f), materials["black"]);
-            Primitive(guard, "Body", PrimitiveType.Cylinder, new Vector3(0f, 0.675f, 0f), new Vector3(0.64f, 0.675f, 0.64f), materials["inkBlue"]);
-            Primitive(guard, "Cap", PrimitiveType.Cylinder, new Vector3(0f, 1.38f, 0f), new Vector3(0.7f, 0.05f, 0.7f), materials["coral"]);
-
-            staff = NewGroup(actors, "Staff");
-            staff.position = new Vector3(HeistGame.StaffStart.x, 0f, HeistGame.StaffStart.y);
-            Primitive(staff, "Base", PrimitiveType.Cylinder, new Vector3(0f, 0.02f, 0f), new Vector3(1f, 0.04f, 1f), materials["black"]);
-            Primitive(staff, "Body", PrimitiveType.Cylinder, new Vector3(0f, 0.675f, 0f), new Vector3(0.64f, 0.675f, 0.64f), materials["sun"]);
-            Primitive(staff, "Cap", PrimitiveType.Cylinder, new Vector3(0f, 1.38f, 0f), new Vector3(0.7f, 0.05f, 0.7f), materials["coral"]);
+            player = AttachActor(actors, "Player", DetailFactory.BuildActor("player"), HeistGame.PlayerStart, 0f);
+            guard = AttachActor(actors, "Guard", DetailFactory.BuildActor("guard"), HeistGame.GuardStart, -1.5f * Mathf.Rad2Deg);
+            staff = AttachActor(actors, "Staff", DetailFactory.BuildActor("staff"), HeistGame.StaffStart, 0f);
 
             var fanObject = new GameObject("Guard Vision Fan");
             fanObject.transform.SetParent(actors, false);
@@ -597,6 +532,15 @@ namespace HeistSim.Market.Editor
             mesh.SetTriangles(triangles, 0);
             mesh.RecalculateBounds();
             return mesh;
+        }
+
+        private static Transform AttachActor(Transform parent, string name, GameObject detail, Vector2 start, float yaw)
+        {
+            detail.name = name;
+            detail.transform.SetParent(parent, false);
+            detail.transform.position = new Vector3(start.x, 0f, start.y);
+            detail.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+            return detail.transform;
         }
 
         private static Transform NewGroup(Transform parent, string name)

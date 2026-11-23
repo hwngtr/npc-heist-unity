@@ -5,6 +5,7 @@
         "HeistSim",
         "HeistSim.Arena",
         "HeistSim.Market",
+        "HeistSim.Market.Editor",
         "Unity.TextMeshPro",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"

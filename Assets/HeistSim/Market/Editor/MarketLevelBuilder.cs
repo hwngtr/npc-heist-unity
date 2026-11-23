@@ -24,6 +24,18 @@ namespace HeistSim.Market.Editor
         /// <summary>Gap kept between a camera visual and the floor edge, in tiles.</summary>
         private const float CameraEdgeInset = 0.5f;
 
+        /// <summary>Perimeter inset used by MarketGrid.IsInsideBuilding, mirrored by the divider stubs.</summary>
+        private const float OuterInset = 0.75f;
+
+        /// <summary>Group that holds one thin floor panel per MarketData.Rooms entry.</summary>
+        private const string RoomFloorsGroup = "Room Floors";
+
+        /// <summary>Group that holds the seam stubs between adjacent rooms.</summary>
+        private const string RoomDividersGroup = "Room Dividers";
+
+        /// <summary>Group that holds one world-space department label per room.</summary>
+        private const string RoomLabelsGroup = "Room Labels";
+
         /// <summary>Rebuilds the market scene and saves it over the existing asset.</summary>
         [MenuItem("Heist/Market/Build Level Scene")]
         public static void BuildLevel()
@@ -99,6 +111,7 @@ namespace HeistSim.Market.Editor
             {
                 ["floor"] = FlatMaterial("MarketFloor", MarketSceneSpec.Card),
                 ["wall"] = FlatMaterial("MarketWall", MarketSceneSpec.Paper),
+                ["zoneMuted"] = FlatMaterial("MarketZoneMuted", MarketSceneSpec.Rgb(0xD6CFC0)),
                 ["coral"] = FlatMaterial("MarketCoral", MarketSceneSpec.Coral),
                 ["coralInk"] = FlatMaterial("MarketCoralInk", MarketSceneSpec.CoralInk),
                 ["sun"] = FlatMaterial("MarketSun", MarketSceneSpec.Sun),
@@ -217,7 +230,10 @@ namespace HeistSim.Market.Editor
             var content = market.transform;
 
             var floor = NewGroup(content, "Floor");
-            Box(floor, "Floor Slab", new Vector3(18f, -0.1f, 13.5f), new Vector3(36f, 0.2f, 27f), materials["floor"]);
+            Box(floor, "Floor Slab", new Vector3(18f, -0.12f, 13.5f), new Vector3(36f, 0.2f, 27f), materials["floor"]);
+            BuildRoomFloors(content, materials);
+            BuildDividers(content, materials);
+            BuildRoomLabels(content, font);
 
             var walls = NewGroup(content, "Walls");
             Box(walls, "Back Wall", new Vector3(18f, 1.1f, 27.15f), new Vector3(36f, 2.2f, 0.3f), materials["wall"]);
@@ -239,6 +255,148 @@ namespace HeistSim.Market.Editor
             runner.visionFan = fan;
             runner.hud = hud;
             runner.cameraCones = cones;
+        }
+
+        /// <summary>
+        /// Paints one thin panel per room cell. Paper and card alternate across the room grid; checkout and
+        /// stockroom use a muted third tone so the two service zones read apart from the sales floor.
+        /// </summary>
+        private static void BuildRoomFloors(Transform content, Dictionary<string, Material> materials)
+        {
+            var rooms = NewGroup(content, RoomFloorsGroup);
+            foreach (var room in MarketData.Rooms)
+            {
+                var key = room.Type == "checkout" || room.Type == "stockroom"
+                    ? "zoneMuted"
+                    : (room.AtI + room.AtJ) % 2 == 0 ? "wall" : "floor";
+                var centre = new Vector3(
+                    room.OriginI + MarketData.RoomTiles * 0.5f,
+                    0.01f,
+                    room.OriginJ + MarketData.RoomTiles * 0.5f);
+                Box(
+                    rooms,
+                    "Room Panel " + room.Id,
+                    centre,
+                    new Vector3(MarketData.RoomTiles - 0.02f, 0.02f, MarketData.RoomTiles - 0.02f),
+                    materials[key]);
+            }
+        }
+
+        /// <summary>
+        /// Builds low seam stubs outside the doorway band. MarketGrid.IsDoorwayStep at
+        /// Scripts/Sim/MarketGrid.cs line 135 admits a crossing when the room local tile centre sits between
+        /// DoorwayBandMin and DoorwayBandMax, so the same band is left empty here. The perimeter ends use the
+        /// same 0.75 inset as MarketGrid.IsInsideBuilding at line 117.
+        /// </summary>
+        private static void BuildDividers(Transform content, Dictionary<string, Material> materials)
+        {
+            var dividers = NewGroup(content, RoomDividersGroup);
+            var dark = materials["black"];
+            var low = (float)MarketData.DoorwayBandMin;
+            var high = (float)MarketData.DoorwayBandMax;
+
+            for (var column = 1; column < MarketData.Columns; column++)
+            {
+                var seamX = column * MarketData.RoomTiles;
+                for (var row = 0; row < MarketData.Rows; row++)
+                {
+                    var origin = row * MarketData.RoomTiles;
+                    var from = row == 0 ? OuterInset : origin;
+                    var to = row == MarketData.Rows - 1 ? MarketData.HeightTiles - OuterInset : origin + MarketData.RoomTiles;
+                    AddStub(dividers, "Divider V c" + column + " r" + row + " low", seamX, from, origin + low, origin, true, dark);
+                    AddStub(dividers, "Divider V c" + column + " r" + row + " high", seamX, origin + high, to, origin, true, dark);
+                }
+            }
+
+            for (var row = 1; row < MarketData.Rows; row++)
+            {
+                var seamZ = row * MarketData.RoomTiles;
+                for (var column = 0; column < MarketData.Columns; column++)
+                {
+                    var origin = column * MarketData.RoomTiles;
+                    var from = column == 0 ? OuterInset : origin;
+                    var to = column == MarketData.Columns - 1 ? MarketData.WidthTiles - OuterInset : origin + MarketData.RoomTiles;
+                    AddStub(dividers, "Divider H r" + row + " c" + column + " low", seamZ, from, origin + low, origin, false, dark);
+                    AddStub(dividers, "Divider H r" + row + " c" + column + " high", seamZ, origin + high, to, origin, false, dark);
+                }
+            }
+        }
+
+        /// <summary>Adds one seam segment when its midpoint lies outside the grid doorway band.</summary>
+        private static void AddStub(
+            Transform parent,
+            string name,
+            float seam,
+            float from,
+            float to,
+            float roomOrigin,
+            bool vertical,
+            Material material)
+        {
+            if (to - from <= 0.01f || IsDoorway((from + to) * 0.5f - roomOrigin))
+            {
+                return;
+            }
+
+            var centre = vertical
+                ? new Vector3(seam, 0.3f, (from + to) * 0.5f)
+                : new Vector3((from + to) * 0.5f, 0.3f, seam);
+            var size = vertical
+                ? new Vector3(0.12f, 0.6f, to - from)
+                : new Vector3(to - from, 0.6f, 0.12f);
+            Box(parent, name, centre, size, material);
+        }
+
+        /// <summary>Mirrors the room local doorway check in MarketGrid.IsDoorwayStep.</summary>
+        private static bool IsDoorway(float localAlong)
+            => localAlong > MarketData.DoorwayBandMin && localAlong < MarketData.DoorwayBandMax;
+
+        /// <summary>Places one world-space TMP label flat on each department panel near its entrance corner.</summary>
+        private static void BuildRoomLabels(Transform content, TMP_FontAsset font)
+        {
+            var labels = NewGroup(content, RoomLabelsGroup);
+            foreach (var room in MarketData.Rooms)
+            {
+                var labelObject = new GameObject("Room Label " + room.Id);
+                labelObject.transform.SetParent(labels, false);
+                labelObject.transform.position = new Vector3(
+                    room.OriginI + MarketData.RoomTiles * 0.5f,
+                    0.05f,
+                    room.OriginJ + 0.9f);
+                // The yaw turns the baseline along screen right and the text top along screen up for the isometric camera.
+                labelObject.transform.rotation = Quaternion.Euler(90f, 45f, 0f);
+
+                var label = labelObject.AddComponent<TextMeshPro>();
+                if (font != null)
+                {
+                    label.font = font;
+                }
+
+                label.text = room.Name;
+                label.fontSize = 6f;
+                label.color = MarketSceneSpec.InkBlue2;
+                label.alignment = TextAlignmentOptions.Center;
+                label.textWrappingMode = TextWrappingModes.NoWrap;
+                label.overflowMode = TextOverflowModes.Overflow;
+                label.rectTransform.sizeDelta = new Vector2(MarketData.RoomTiles - 0.6f, 1.2f);
+                label.ForceMeshUpdate();
+            }
+        }
+
+        /// <summary>
+        /// Adds a sun chevron above the player. It is parented to the player root, so the existing
+        /// MarketRunner position sync carries it with no runtime or HUD change.
+        /// </summary>
+        private static void AttachYouMarker(Transform player, Material sun)
+        {
+            var marker = new GameObject("YOU Marker");
+            marker.transform.SetParent(player, false);
+            marker.transform.localPosition = new Vector3(0f, 1.56f, 0f);
+
+            var left = Box(marker.transform, "Chevron Left", new Vector3(-0.13f, 0.13f, 0f), new Vector3(0.38f, 0.08f, 0.06f), sun);
+            left.transform.localRotation = Quaternion.Euler(0f, 0f, 135f);
+            var right = Box(marker.transform, "Chevron Right", new Vector3(0.13f, 0.13f, 0f), new Vector3(0.38f, 0.08f, 0.06f), sun);
+            right.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
         }
 
         private static void BuildFixtures(Transform content)
@@ -325,6 +483,7 @@ namespace HeistSim.Market.Editor
             out GuardVisionFan fan)
         {
             player = AttachActor(actors, "Player", DetailFactory.BuildActor("player"), HeistGame.PlayerStart, 0f);
+            AttachYouMarker(player, materials["sun"]);
             guard = AttachActor(actors, "Guard", DetailFactory.BuildActor("guard"), HeistGame.GuardStart, -1.5f * Mathf.Rad2Deg);
             staff = AttachActor(actors, "Staff", DetailFactory.BuildActor("staff"), HeistGame.StaffStart, 0f);
 

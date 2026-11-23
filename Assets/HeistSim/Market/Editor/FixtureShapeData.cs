@@ -98,6 +98,18 @@ namespace HeistSim.Market.Editor
             return new DetailPart(DetailPrimitive.Disc, new Vector3(u, z, v), new Vector3(diameter, 0.02f, diameter), ink, true);
         }
 
+        /// <summary>
+        /// Creates an upright cylinder with the given actual radius and height. The Unity cylinder primitive is two
+        /// units tall, so the stored height is halved before DetailFactory applies it as a local scale.
+        /// </summary>
+        private static DetailPart Cyl(float u, float v, float bottom, float radius, float height, InkRole ink)
+            => new DetailPart(
+                DetailPrimitive.Cylinder,
+                new Vector3(u, bottom + height * 0.5f, v),
+                new Vector3(radius * 2f, height * 0.5f, radius * 2f),
+                ink,
+                false);
+
         /// <summary>Authored part lists for every fixture kind in MarketData.Kinds.</summary>
         public static readonly IReadOnlyDictionary<string, DetailPart[]> Fixtures = new Dictionary<string, DetailPart[]>(StringComparer.Ordinal)
         {
@@ -590,15 +602,19 @@ namespace HeistSim.Market.Editor
         /// </summary>
         public static readonly IReadOnlyDictionary<string, DetailPart[]> Actors = new Dictionary<string, DetailPart[]>(StringComparer.Ordinal)
         {
-            // player role: bot parts from robot.js, mark from market-app.js as cited.
+            // player role: the web teal thief bot, enlarged to read at gameplay zoom. Guard and staff parts stay untouched.
             ["player"] = new[]
             {
-                B(0f, 0f, 0.02f, 1f, 1f, 0.04f, InkRole.Black), // polish round base disc
-                S(0f, 0f, 0.52f, 0.52f, InkRole.Black), // robot.js line 34 black ball
-                D(-0.13f, -0.46f, 0.58f, 2.4f, InkRole.Paper), // robot.js line 83 left paper eye
-                D(0.13f, -0.46f, 0.58f, 2.4f, InkRole.Paper), // robot.js line 83 right paper eye
-                B(-0.44f, 0.18f, 0.46f, 0.88f, 0.1f, 0.22f, InkRole.Teal), // market-app.js line 1041 teal thief band
-                C(0f, 0f, 1.12f, 0.38f, 0.08f, InkRole.Sun), // market-app.js line 1047 thief keeps the sun cap
+                // sun floor ring, rendered as a Disc and left hollow by the black base above it
+                new DetailPart(DetailPrimitive.Disc, new Vector3(0f, 0.03f, 0f), new Vector3(1.5f, 0.02f, 1.5f), InkRole.Sun, false),
+                B(-0.5f, -0.5f, 0.04f, 1f, 1f, 0.04f, InkRole.Black), // centred base disc under the ring centre
+                Cyl(0f, 0f, 0.06f, 0.34f, 1.1f, InkRole.Teal), // bright teal body, radius 0.34 and height 1.1
+                B(-0.28f, -0.34f, 0.55f, 0.56f, 0.1f, 0.46f, InkRole.Black), // black face plate on the front
+                D(-0.12f, -0.4f, 0.82f, 2.4f, InkRole.Paper), // robot.js line 83 left paper eye
+                D(0.12f, -0.4f, 0.82f, 2.4f, InkRole.Paper), // robot.js line 83 right paper eye
+                B(-0.22f, 0.3f, 0.62f, 0.44f, 0.3f, 0.42f, InkRole.Coral), // coral loot bag on the back
+                Cyl(0f, 0f, 1.06f, 0.52f, 0.06f, InkRole.Sun), // sun cap brim
+                Cyl(0f, 0f, 1.12f, 0.34f, 0.14f, InkRole.Sun), // sun cap crown
             },
             // guard role: bot parts from robot.js, mark from market-app.js as cited.
             ["guard"] = new[]

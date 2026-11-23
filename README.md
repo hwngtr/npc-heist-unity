@@ -47,4 +47,6 @@ The playable market shift is `Assets/HeistSim/Market/Market.unity`. Rebuild it f
 | R | start a new shift |
 | Tab or B | switch the guard between the FSM and the BT controller |
 
+Click the Game view once to give it focus before WASD works.
+
 The HUD shows the heat tier, the loot value against the 190 quota, the bag, the five objectives, the guard state with its controller badge, the staff backup radio and the timed action progress. `Assets/HeistSim/Market/Captures/Market.png` is the review capture of the built scene.

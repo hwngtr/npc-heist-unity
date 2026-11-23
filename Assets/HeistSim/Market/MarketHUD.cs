@@ -46,6 +46,9 @@ namespace HeistSim.Market
         /// <summary>Control hint along the bottom of the view.</summary>
         public TMP_Text hintText;
 
+        /// <summary>Current department name for the player tile, shown as one line in the HUD.</summary>
+        public TMP_Text zoneText;
+
         private bool _built;
 
         private void Awake()
@@ -119,12 +122,19 @@ namespace HeistSim.Market
             bannerText.fontStyle = FontStyles.Bold;
             bannerText.gameObject.SetActive(false);
 
-            hintText = CreateText("Hint", transform, font, "WASD or arrows sneak | hold E act | C crouch | Shift run | R new shift | Tab guard", 16f, ink, TextAlignmentOptions.BottomLeft, new Vector2(24f, 20f), new Vector2(900f, 24f));
+            hintText = CreateText("Hint", transform, font, "Click the Game view first | WASD or arrows sneak | hold E act | C crouch | Shift run | R new shift | Tab guard", 16f, ink, TextAlignmentOptions.BottomLeft, new Vector2(24f, 20f), new Vector2(900f, 24f));
             var hintRect = hintText.rectTransform;
             hintRect.anchorMin = new Vector2(0f, 0f);
             hintRect.anchorMax = new Vector2(0f, 0f);
             hintRect.pivot = new Vector2(0f, 0f);
             hintRect.anchoredPosition = new Vector2(24f, 20f);
+
+            zoneText = CreateText("Zone", transform, font, "Zone: " + MarketData.Rooms[0].Name, 18f, ink, TextAlignmentOptions.BottomLeft, new Vector2(24f, 48f), new Vector2(900f, 24f));
+            var zoneRect = zoneText.rectTransform;
+            zoneRect.anchorMin = new Vector2(0f, 0f);
+            zoneRect.anchorMax = new Vector2(0f, 0f);
+            zoneRect.pivot = new Vector2(0f, 0f);
+            zoneRect.anchoredPosition = new Vector2(24f, 48f);
 
             _built = true;
             return true;
@@ -147,6 +157,11 @@ namespace HeistSim.Market
 
             lootText.text = "Loot: " + Mathf.FloorToInt(snapshot.StolenValue) + " / " + MarketData.Quota;
             bagText.text = "Bag: " + snapshot.BagCount + " / " + MarketData.BagCapacity;
+
+            if (zoneText != null)
+            {
+                zoneText.text = "Zone: " + ZoneName(snapshot.Player);
+            }
 
             if (snapshot.Objectives != null)
             {
@@ -186,6 +201,23 @@ namespace HeistSim.Market
             {
                 bannerText.gameObject.SetActive(false);
             }
+        }
+
+        /// <summary>Maps a tile position to the department that owns it, clamping outside points into the floorplan.</summary>
+        public static string ZoneName(Vector2 player)
+        {
+            var i = Mathf.Clamp(player.x, 0f, MarketData.WidthTiles - 0.001f);
+            var j = Mathf.Clamp(player.y, 0f, MarketData.HeightTiles - 0.001f);
+            foreach (var room in MarketData.Rooms)
+            {
+                if (i >= room.OriginI && i < room.OriginI + MarketData.RoomTiles
+                    && j >= room.OriginJ && j < room.OriginJ + MarketData.RoomTiles)
+                {
+                    return room.Name;
+                }
+            }
+
+            return "Frischemarkt";
         }
 
         private static string ObjectiveLabel(string id)

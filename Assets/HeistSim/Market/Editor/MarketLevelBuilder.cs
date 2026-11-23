@@ -33,9 +33,6 @@ namespace HeistSim.Market.Editor
         /// <summary>Group that holds the seam stubs between adjacent rooms.</summary>
         private const string RoomDividersGroup = "Room Dividers";
 
-        /// <summary>Group that holds one world-space department label per room.</summary>
-        private const string RoomLabelsGroup = "Room Labels";
-
         /// <summary>Rebuilds the market scene and saves it over the existing asset.</summary>
         [MenuItem("Heist/Market/Build Level Scene")]
         public static void BuildLevel()
@@ -233,7 +230,6 @@ namespace HeistSim.Market.Editor
             Box(floor, "Floor Slab", new Vector3(18f, -0.12f, 13.5f), new Vector3(36f, 0.2f, 27f), materials["floor"]);
             BuildRoomFloors(content, materials);
             BuildDividers(content, materials);
-            BuildRoomLabels(content, font);
 
             var walls = NewGroup(content, "Walls");
             Box(walls, "Back Wall", new Vector3(18f, 1.1f, 27.15f), new Vector3(36f, 2.2f, 0.3f), materials["wall"]);
@@ -350,38 +346,6 @@ namespace HeistSim.Market.Editor
         /// <summary>Mirrors the room local doorway check in MarketGrid.IsDoorwayStep.</summary>
         private static bool IsDoorway(float localAlong)
             => localAlong > MarketData.DoorwayBandMin && localAlong < MarketData.DoorwayBandMax;
-
-        /// <summary>Places one world-space TMP label flat on each department panel near its entrance corner.</summary>
-        private static void BuildRoomLabels(Transform content, TMP_FontAsset font)
-        {
-            var labels = NewGroup(content, RoomLabelsGroup);
-            foreach (var room in MarketData.Rooms)
-            {
-                var labelObject = new GameObject("Room Label " + room.Id);
-                labelObject.transform.SetParent(labels, false);
-                labelObject.transform.position = new Vector3(
-                    room.OriginI + MarketData.RoomTiles * 0.5f,
-                    0.05f,
-                    room.OriginJ + 0.9f);
-                // The yaw turns the baseline along screen right and the text top along screen up for the isometric camera.
-                labelObject.transform.rotation = Quaternion.Euler(90f, 45f, 0f);
-
-                var label = labelObject.AddComponent<TextMeshPro>();
-                if (font != null)
-                {
-                    label.font = font;
-                }
-
-                label.text = room.Name;
-                label.fontSize = 6f;
-                label.color = MarketSceneSpec.InkBlue2;
-                label.alignment = TextAlignmentOptions.Center;
-                label.textWrappingMode = TextWrappingModes.NoWrap;
-                label.overflowMode = TextOverflowModes.Overflow;
-                label.rectTransform.sizeDelta = new Vector2(MarketData.RoomTiles - 0.6f, 1.2f);
-                label.ForceMeshUpdate();
-            }
-        }
 
         /// <summary>
         /// Adds a sun chevron above the player. It is parented to the player root, so the existing

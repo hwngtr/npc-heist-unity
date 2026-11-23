@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -31,6 +32,19 @@ namespace HeistSim.Market
         /// <summary>HUD refresh interval in frames.</summary>
         public const int HudFrameInterval = 6;
 
+        /// <summary>Keys the IMGUI reader consumes, independent of Active Input Handling.</summary>
+        private static readonly HashSet<KeyCode> TrackedGuiKeys = new HashSet<KeyCode>
+        {
+            KeyCode.W, KeyCode.A, KeyCode.S, KeyCode.D,
+            KeyCode.UpArrow, KeyCode.DownArrow, KeyCode.LeftArrow, KeyCode.RightArrow,
+            KeyCode.E, KeyCode.Space, KeyCode.C,
+            KeyCode.LeftShift, KeyCode.RightShift,
+            KeyCode.R, KeyCode.Tab, KeyCode.B,
+        };
+
+        private readonly HashSet<KeyCode> _guiKeys = new HashSet<KeyCode>();
+        private readonly Dictionary<KeyCode, int> _guiKeyDownFrame = new Dictionary<KeyCode, int>();
+
         private HeistGame _game;
         private GuardProfile _profile;
         private MarketLootMarker[] _lootMarkers = Array.Empty<MarketLootMarker>();
@@ -46,6 +60,7 @@ namespace HeistSim.Market
         private bool _lastVitrineOpen;
         private bool _inputFallbackWarned;
         private bool _legacyInputWarned;
+        private bool _imguiActiveLogged;
 
         /// <summary>The live game, one per shift.</summary>
         public HeistGame Game => _game;
@@ -324,8 +339,90 @@ namespace HeistSim.Market
             return null;
         }
 
+        /// <summary>Collects key events through IMGUI, which works in either Active Input Handling mode.</summary>
+        private void OnGUI()
+        {
+            var current = Event.current;
+            if (current == null)
+            {
+                return;
+            }
+
+            if (current.type == EventType.KeyDown)
+            {
+                var key = current.keyCode;
+                if (!IsTrackedGuiKey(key))
+                {
+                    return;
+                }
+
+                if (_guiKeys.Add(key))
+                {
+                    _guiKeyDownFrame[key] = Time.frameCount;
+                }
+
+                current.Use();
+                return;
+            }
+
+            if (current.type == EventType.KeyUp)
+            {
+                var key = current.keyCode;
+                if (!IsTrackedGuiKey(key))
+                {
+                    return;
+                }
+
+                _guiKeys.Remove(key);
+                current.Use();
+            }
+        }
+
+        private static bool IsTrackedGuiKey(KeyCode key)
+        {
+            return TrackedGuiKeys.Contains(key);
+        }
+
+        private bool GuiHeld(KeyCode key)
+        {
+            return _guiKeys.Contains(key);
+        }
+
+        private bool GuiPressed(KeyCode key)
+        {
+            return _guiKeyDownFrame.TryGetValue(key, out var frame) && frame >= Time.frameCount - 1;
+        }
+
+        private bool HasRecentGuiEdge()
+        {
+            return GuiPressed(KeyCode.R) || GuiPressed(KeyCode.Tab) || GuiPressed(KeyCode.B);
+        }
+
         private void ReadKeys(out HeistInput input, out bool reset, out bool toggle)
         {
+            if (_guiKeys.Count > 0 || HasRecentGuiEdge())
+            {
+                var i = (GuiHeld(KeyCode.D) || GuiHeld(KeyCode.RightArrow) ? 1f : 0f)
+                    - (GuiHeld(KeyCode.A) || GuiHeld(KeyCode.LeftArrow) ? 1f : 0f);
+                var j = (GuiHeld(KeyCode.S) || GuiHeld(KeyCode.DownArrow) ? 1f : 0f)
+                    - (GuiHeld(KeyCode.W) || GuiHeld(KeyCode.UpArrow) ? 1f : 0f);
+                input = new HeistInput(
+                    i,
+                    j,
+                    GuiHeld(KeyCode.E) || GuiHeld(KeyCode.Space),
+                    GuiHeld(KeyCode.C),
+                    GuiHeld(KeyCode.LeftShift) || GuiHeld(KeyCode.RightShift));
+                reset = GuiPressed(KeyCode.R);
+                toggle = GuiPressed(KeyCode.Tab) || GuiPressed(KeyCode.B);
+                if (!_imguiActiveLogged)
+                {
+                    _imguiActiveLogged = true;
+                    Debug.Log("MarketRunner: using IMGUI keyboard input. Click the Game view once to give it focus before using WASD.");
+                }
+
+                return;
+            }
+
             var keyboard = Keyboard.current;
             if (keyboard != null)
             {

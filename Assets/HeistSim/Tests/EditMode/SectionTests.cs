@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 
 namespace HeistSim.Tests
 {
-    /// <summary>Checks that the built market scene paints and labels every MarketData.Rooms department.</summary>
+    /// <summary>Checks that the built market scene paints every department floor panel and keeps all text in the HUD.</summary>
     public sealed class SectionTests
     {
         [Test]
@@ -42,23 +42,50 @@ namespace HeistSim.Tests
         }
 
         [Test]
-        public void RoomLabelCountMatchesRoomData()
+        public void ZoneLineMapsPlayerTileToDepartment()
+        {
+            foreach (var room in MarketData.Rooms)
+            {
+                var centre = new Vector2(
+                    room.OriginI + MarketData.RoomTiles * 0.5f,
+                    room.OriginJ + MarketData.RoomTiles * 0.5f);
+                Assert.That(MarketHUD.ZoneName(centre), Is.EqualTo(room.Name), "centre of " + room.Id);
+
+                var nearCorner = new Vector2(room.OriginI + 0.25f, room.OriginJ + 0.25f);
+                Assert.That(MarketHUD.ZoneName(nearCorner), Is.EqualTo(room.Name), "corner of " + room.Id);
+            }
+
+            Assert.That(
+                MarketHUD.ZoneName(new Vector2(-5f, -5f)),
+                Is.EqualTo(MarketData.Rooms[0].Name),
+                "point outside the floorplan clamps to r1");
+            Assert.That(
+                MarketHUD.ZoneName(new Vector2(MarketData.WidthTiles + 5f, MarketData.HeightTiles + 5f)),
+                Is.EqualTo(MarketHUD.ZoneName(new Vector2(MarketData.WidthTiles - 0.5f, MarketData.HeightTiles - 0.5f))),
+                "point outside the floorplan clamps to the last room");
+        }
+
+        [Test]
+        public void NoWorldSpaceTextOutsideTheHudCanvas()
         {
             RequireBuiltScene();
 
             var scene = OpenScene();
             try
             {
-                var labels = FindDeep(scene.GetRootGameObjects(), "Room Labels");
-                Assert.That(labels, Is.Not.Null, "room labels group missing");
-                Assert.That(labels.childCount, Is.EqualTo(MarketData.Rooms.Length), "room label object count");
+                var roots = scene.GetRootGameObjects();
+                var hud = roots.SelectMany(root => root.GetComponentsInChildren<MarketHUD>(true)).FirstOrDefault();
+                Assert.That(hud, Is.Not.Null, "hud missing");
+                Assert.That(hud.zoneText, Is.Not.Null, "zone line missing");
+                Assert.That(hud.zoneText.text, Does.StartWith("Zone: "), "zone line prefix");
 
-                var texts = labels.GetComponentsInChildren<TextMeshPro>(true);
-                Assert.That(texts.Length, Is.EqualTo(MarketData.Rooms.Length), "room label component count");
-                foreach (var room in MarketData.Rooms)
-                {
-                    Assert.That(texts.Count(text => text.text == room.Name), Is.EqualTo(1), "label for " + room.Id);
-                }
+                var worldText = roots.SelectMany(root => root.GetComponentsInChildren<TextMeshPro>(true)).ToArray();
+                Assert.That(worldText, Is.Empty, "no world-space TMP labels may remain in the scene");
+
+                var strayText = roots.SelectMany(root => root.GetComponentsInChildren<TMP_Text>(true))
+                    .Where(text => !IsDescendantOf(text.transform, hud.transform))
+                    .ToArray();
+                Assert.That(strayText, Is.Empty, "all TMP text must live under the HUD canvas");
             }
             finally
             {
@@ -101,6 +128,19 @@ namespace HeistSim.Tests
             {
                 EditorSceneManager.CloseScene(scene, true);
             }
+        }
+
+        private static bool IsDescendantOf(Transform candidate, Transform ancestor)
+        {
+            for (var node = candidate; node != null; node = node.parent)
+            {
+                if (node == ancestor)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Scene OpenScene()

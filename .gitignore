@@ -1,0 +1,33 @@
+# Unity meta cruft
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]serSettings/
+[Mm]emoryCaptures/
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+sysinfo.txt
+*.apk
+*.aab
+*.unitypackage
+crashlytics-build.properties
+
+# Rider and VS
+.vs/
+.idea/
+*.csproj
+*.sln
+*.user
+
+# OS
+.DS_Store
+
+# Test gate output
+Tools/*.xml
+Tools/*.log
+Tools/*.xml.meta
+Tools/*.log.meta

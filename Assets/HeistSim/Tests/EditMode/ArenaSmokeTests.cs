@@ -16,6 +16,9 @@ namespace HeistSim.Tests
         {
             RequireBuiltScenes();
 
+            Assert.That(ArenaSpec.ScenePaths.Length, Is.EqualTo(4), "arena look count");
+            Assert.That(ArenaSpec.CaptureFiles.Length, Is.EqualTo(4), "arena capture count");
+
             foreach (var path in ArenaSpec.ScenePaths)
             {
                 Assert.That(AssetDatabase.LoadAssetAtPath<SceneAsset>(path), Is.Not.Null, path);

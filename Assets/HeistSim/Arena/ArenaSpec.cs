@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace HeistSim.Arena
 {
-    /// <summary>Palette, scene paths and root contract shared by the three arena look candidates.</summary>
+    /// <summary>Palette, scene paths and root contract shared by the four arena look candidates.</summary>
     public static class ArenaSpec
     {
         /// <summary>Root objects every built scene contains: Main Camera, Content and Arena Settings.</summary>
@@ -26,10 +26,11 @@ namespace HeistSim.Arena
             "Assets/HeistSim/Arena/LookA-SpriteDither.unity",
             "Assets/HeistSim/Arena/LookB-FlatIso3D.unity",
             "Assets/HeistSim/Arena/LookC-TilemapPost.unity",
+            "Assets/HeistSim/Arena/LookD-FlatIsoDither.unity",
         };
 
         /// <summary>Capture file names in look order.</summary>
-        public static readonly string[] CaptureFiles = { "LookA.png", "LookB.png", "LookC.png" };
+        public static readonly string[] CaptureFiles = { "LookA.png", "LookB.png", "LookC.png", "LookD.png" };
 
         /// <summary>Root object names present in every built scene.</summary>
         public static readonly string[] RootNames = { "Main Camera", "Content", "Arena Settings" };

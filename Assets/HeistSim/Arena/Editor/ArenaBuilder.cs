@@ -10,7 +10,7 @@ using UnityEngine.Tilemaps;
 
 namespace HeistSim.Arena.Editor
 {
-    /// <summary>Builds the three arena look scenes from one shared content spec.</summary>
+    /// <summary>Builds the four arena look scenes from one shared content spec.</summary>
     public static class ArenaBuilder
     {
         private const string ArenaDir = "Assets/HeistSim/Arena";
@@ -29,12 +29,13 @@ namespace HeistSim.Arena.Editor
         private static Material s_spriteMaterial;
         private static Material s_blobMaterial;
         private static Material s_postMaterial;
+        private static Material s_ditherMaterial;
         private static Sprite s_squareSprite;
         private static Sprite s_coneSprite;
         private static Mesh s_coneMesh;
         private static readonly Dictionary<int, Material> RisoByColor = new Dictionary<int, Material>();
 
-        /// <summary>Rebuilds all three look scenes and saves them over the existing assets.</summary>
+        /// <summary>Rebuilds all four look scenes and saves them over the existing assets.</summary>
         [MenuItem("Heist/Arena/Build All Looks")]
         public static void BuildAll()
         {
@@ -45,6 +46,7 @@ namespace HeistSim.Arena.Editor
             BuildLookA();
             BuildLookB();
             BuildLookC();
+            BuildLookD();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -113,6 +115,15 @@ namespace HeistSim.Arena.Editor
             s_postMaterial.SetColor("_PaperColor", ArenaSpec.Paper);
             s_postMaterial.SetColor("_InkColor", ArenaSpec.InkBlue);
             EditorUtility.SetDirty(s_postMaterial);
+
+            s_ditherMaterial = NewMaterial("IsoDitherPost", RequireShader("HeistSim/IsoDitherPost"));
+            s_ditherMaterial.SetColor("_PaperColor", ArenaSpec.Paper);
+            s_ditherMaterial.SetColor("_KeyInkColor", ArenaSpec.InkBlue);
+            s_ditherMaterial.SetColor("_TealColor", ArenaSpec.Teal);
+            s_ditherMaterial.SetColor("_SunColor", ArenaSpec.Sun);
+            s_ditherMaterial.SetColor("_CoralColor", ArenaSpec.Coral);
+            s_ditherMaterial.SetColor("_BotBlackColor", ArenaSpec.Black);
+            EditorUtility.SetDirty(s_ditherMaterial);
 
             s_coneMaterial = NewMaterial("ConeInk", risoShader);
             s_coneMaterial.SetTexture("_MainTex", coneTexture);
@@ -206,7 +217,22 @@ namespace HeistSim.Arena.Editor
         private static void BuildLookB()
         {
             var scene = BeginScene(out var contentRoot, out var camera);
-            var content = contentRoot.transform;
+            BuildFlatIsoContent(contentRoot.transform, camera);
+            SaveScene(scene, ArenaSpec.ScenePaths[1]);
+        }
+
+        private static void BuildLookD()
+        {
+            var scene = BeginScene(out var contentRoot, out var camera);
+            BuildFlatIsoContent(contentRoot.transform, camera);
+            var dither = camera.gameObject.AddComponent<IsoDitherPost>();
+            dither.postMaterial = s_ditherMaterial;
+            SaveScene(scene, ArenaSpec.ScenePaths[3]);
+        }
+
+        /// <summary>Builds the shared isometric content used by LookB and LookD.</summary>
+        private static void BuildFlatIsoContent(Transform content, Camera camera)
+        {
             camera.orthographicSize = ArenaSpec.IsoOrthographicSize;
             camera.transform.position = new Vector3(10f, 10f, -10f);
             camera.transform.LookAt(new Vector3(0f, 1f, 1f));
@@ -285,8 +311,6 @@ namespace HeistSim.Arena.Editor
             coneFilter.sharedMesh = s_coneMesh;
             var coneRenderer = cone.AddComponent<MeshRenderer>();
             coneRenderer.sharedMaterial = s_coneFlatMaterial;
-
-            SaveScene(scene, ArenaSpec.ScenePaths[1]);
         }
 
         private static void BuildLookC()
@@ -480,7 +504,13 @@ namespace HeistSim.Arena.Editor
 
         private static Material FlatMaterial(string name, Color color)
         {
-            var material = NewMaterial(name, RequireShader("Standard"));
+            var path = MaterialsDir + "/" + name + ".mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = NewMaterial(name, RequireShader("Standard"));
+            }
+
             material.SetColor("_Color", color);
             material.SetFloat("_Glossiness", 0f);
             material.SetFloat("_Metallic", 0f);

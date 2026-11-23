@@ -13,40 +13,76 @@ namespace HeistSim.Arena.Editor
     {
         private const string CapturesDir = "Assets/HeistSim/Arena/Captures";
 
+        private static readonly int LookDIndex = Array.FindIndex(ArenaSpec.ScenePaths, path => path.Contains("LookD"));
+
         /// <summary>Opens every arena scene, renders its camera and writes the captures.</summary>
         [MenuItem("Heist/Arena/Capture All Looks")]
         public static void CaptureAll()
+        {
+            EnsureCapturesFolder();
+
+            for (var i = 0; i < ArenaSpec.ScenePaths.Length; i++)
+            {
+                CaptureAt(i);
+            }
+
+            AssetDatabase.Refresh();
+        }
+
+        /// <summary>Headless entry point that captures the LookD scene only, exits non zero on failure.</summary>
+        public static void CaptureLookDBatch()
+        {
+            try
+            {
+                EnsureCapturesFolder();
+                if (!CaptureAt(LookDIndex))
+                {
+                    EditorApplication.Exit(1);
+                    return;
+                }
+
+                AssetDatabase.Refresh();
+                Debug.Log("LookD capture finished.");
+                EditorApplication.Exit(0);
+            }
+            catch (Exception error)
+            {
+                Debug.LogError("LookD capture failed: " + error);
+                EditorApplication.Exit(1);
+            }
+        }
+
+        private static void EnsureCapturesFolder()
         {
             if (!AssetDatabase.IsValidFolder(CapturesDir))
             {
                 AssetDatabase.CreateFolder("Assets/HeistSim/Arena", "Captures");
             }
+        }
 
-            for (var i = 0; i < ArenaSpec.ScenePaths.Length; i++)
+        private static bool CaptureAt(int index)
+        {
+            var scenePath = ArenaSpec.ScenePaths[index];
+            if (!File.Exists(scenePath))
             {
-                var scenePath = ArenaSpec.ScenePaths[i];
-                if (!File.Exists(scenePath))
-                {
-                    Debug.LogError("Arena capture skipped, scene missing: " + scenePath);
-                    continue;
-                }
-
-                EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
-                var camera = UnityEngine.Object.FindAnyObjectByType<Camera>();
-                if (camera == null)
-                {
-                    Debug.LogError("Arena capture skipped, no camera in " + scenePath);
-                    continue;
-                }
-
-                var texture = Render(camera);
-                var outputPath = Path.Combine(CapturesDir, ArenaSpec.CaptureFiles[i]);
-                File.WriteAllBytes(outputPath, PngWriter.Encode(texture));
-                UnityEngine.Object.DestroyImmediate(texture);
-                Debug.Log("Arena capture wrote " + Path.GetFullPath(outputPath));
+                Debug.LogError("Arena capture skipped, scene missing: " + scenePath);
+                return false;
             }
 
-            AssetDatabase.Refresh();
+            EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+            var camera = UnityEngine.Object.FindAnyObjectByType<Camera>();
+            if (camera == null)
+            {
+                Debug.LogError("Arena capture skipped, no camera in " + scenePath);
+                return false;
+            }
+
+            var texture = Render(camera);
+            var outputPath = Path.Combine(CapturesDir, ArenaSpec.CaptureFiles[index]);
+            File.WriteAllBytes(outputPath, PngWriter.Encode(texture));
+            UnityEngine.Object.DestroyImmediate(texture);
+            Debug.Log("Arena capture wrote " + Path.GetFullPath(outputPath));
+            return true;
         }
 
         private static Texture2D Render(Camera camera)

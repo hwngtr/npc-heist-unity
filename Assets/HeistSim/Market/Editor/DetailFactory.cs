@@ -174,11 +174,12 @@ namespace HeistSim.Market.Editor
             child.GetComponent<MeshRenderer>().sharedMaterial = InkMaterial(part.Ink);
 
             if (outline && part.Primitive == DetailPrimitive.Box && !part.Front
-                && part.Ink != InkRole.Black && part.Ink != InkRole.Paper
-                && size.x >= 0.8f && size.y >= 0.1f && size.z >= 0.3f)
+                && part.Ink != InkRole.Black
+                && size.x >= 0.7f && size.y >= 0.08f && size.z >= 0.25f)
             {
                 // Web outlines fixture bodies with black strokes (market-app.js lines 1019, 1042 and 1049).
-                // A slightly larger black box behind each broad shell face gives the same separation in 3D.
+                // Every broad shell, including paper white cases, gets a slightly larger black backing shape
+                // so the body ink reads as a silhouette at gameplay zoom. Backings stay inside the footprint.
                 var backing = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 backing.name = index.ToString("00") + " Outline";
                 var backingCollider = backing.GetComponent<Collider>();

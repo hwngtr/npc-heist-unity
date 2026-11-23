@@ -9,6 +9,7 @@ Shader "HeistSim/IsoDitherPost"
         _SunColor ("Sun", Color) = (1.000, 0.831, 0.157, 1)
         _CoralColor ("Coral", Color) = (0.933, 0.408, 0.322, 1)
         _BotBlackColor ("Bot Black", Color) = (0.141, 0.133, 0.149, 1)
+        _BayerScale ("Bayer Scale", Float) = 1
     }
 
     SubShader
@@ -33,6 +34,7 @@ Shader "HeistSim/IsoDitherPost"
             float4 _SunColor;
             float4 _CoralColor;
             float4 _BotBlackColor;
+            float _BayerScale;
 
             static const float k_Bayer8[64] =
             {
@@ -78,7 +80,8 @@ Shader "HeistSim/IsoDitherPost"
                 float3 palette = NearestPalette(source, nearestDistance);
 
                 float2 pixel = floor(i.uv * _MainTex_TexelSize.zw);
-                int2 cell = int2(fmod(pixel, 8.0));
+                float2 scaled = floor(pixel / max(1.0, _BayerScale));
+                int2 cell = int2(fmod(scaled, 8.0));
                 float bayer = (k_Bayer8[cell.y * 8 + cell.x] + 0.5) / 64.0;
 
                 float spread = saturate(nearestDistance * 2.0);

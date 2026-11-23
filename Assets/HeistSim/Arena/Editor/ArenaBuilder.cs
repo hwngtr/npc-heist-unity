@@ -224,14 +224,15 @@ namespace HeistSim.Arena.Editor
         private static void BuildLookD()
         {
             var scene = BeginScene(out var contentRoot, out var camera);
-            BuildFlatIsoContent(contentRoot.transform, camera);
+            BuildFlatIsoContent(contentRoot.transform, camera, ArenaSpec.Card, ArenaSpec.Paper);
             var dither = camera.gameObject.AddComponent<IsoDitherPost>();
             dither.postMaterial = s_ditherMaterial;
+            dither.bayerScale = 2f;
             SaveScene(scene, ArenaSpec.ScenePaths[3]);
         }
 
-        /// <summary>Builds the shared isometric content used by LookB and LookD.</summary>
-        private static void BuildFlatIsoContent(Transform content, Camera camera)
+        /// <summary>Builds the shared isometric content used by LookB and LookD, with optional ground and wall tones.</summary>
+        private static void BuildFlatIsoContent(Transform content, Camera camera, Color? groundTone = null, Color? wallTone = null)
         {
             camera.orthographicSize = ArenaSpec.IsoOrthographicSize;
             camera.transform.position = new Vector3(10f, 10f, -10f);
@@ -251,7 +252,10 @@ namespace HeistSim.Arena.Editor
             RenderSettings.ambientLight = new Color(0.42f, 0.40f, 0.37f);
 
             var floorMaterial = FlatMaterial("FloorInk", ArenaSpec.InkBlue);
-            var cardMaterial = FlatMaterial("WallCard", FlatLight);
+            var groundMaterial = groundTone.HasValue ? FlatMaterial("GroundCard", groundTone.Value) : floorMaterial;
+            var cardMaterial = wallTone.HasValue
+                ? FlatMaterial("WallPaper", wallTone.Value)
+                : FlatMaterial("WallCard", FlatLight);
             var coralMaterial = FlatMaterial("ShelfCoral", ArenaSpec.Coral);
             var coralInkMaterial = FlatMaterial("CoralRule", ArenaSpec.CoralInk);
             var tealMaterial = FlatMaterial("FreezerTeal", ArenaSpec.Teal);
@@ -260,7 +264,7 @@ namespace HeistSim.Arena.Editor
             var blackMaterial = FlatMaterial("BotBlack", ArenaSpec.Black);
             var playerMaterial = FlatMaterial("PlayerTeal", ArenaSpec.Teal);
 
-            Box(content, "Floor Slab", new Vector3(0f, -0.2f, 0.8f), new Vector3(15f, 0.4f, 6f), floorMaterial);
+            Box(content, "Floor Slab", new Vector3(0f, -0.2f, 0.8f), new Vector3(15f, 0.4f, 6f), groundMaterial);
             Box(content, "Wall Slab", new Vector3(0f, 1.6f, 4.2f), new Vector3(15f, 3.2f, 0.4f), cardMaterial);
             Box(content, "Wall Rule", new Vector3(0f, 0.35f, 3.98f), new Vector3(15f, 0.3f, 0.05f), coralMaterial);
 

@@ -45,6 +45,9 @@ namespace HeistSim.Market.UI
         /// <summary>Reference height used by the market canvas scaler.</summary>
         public const float ReferenceHeight = 900f;
 
+        /// <summary>Minimum screen-space margin kept around every corner panel.</summary>
+        public const float SafeMargin = 12f;
+
         private readonly struct Region
         {
             public Region(Vector2 anchor, Vector2 pivot, Vector2 margin, Vector2 size, Vector2? stretchMax = null)
@@ -115,6 +118,16 @@ namespace HeistSim.Market.UI
                 bottom,
                 left + region.Size.x * scale,
                 bottom + region.Size.y * scale);
+        }
+
+        /// <summary>Returns true when a panel stays inside the screen with the safe margin.</summary>
+        public static bool FitsScreen(HudPanel panel, float width, float height)
+        {
+            var bounds = Bounds(panel, width, height);
+            return bounds.xMin >= SafeMargin
+                && bounds.yMin >= SafeMargin
+                && bounds.xMax <= width - SafeMargin
+                && bounds.yMax <= height - SafeMargin;
         }
 
         /// <summary>Scale applied by the market canvas scaler at a given resolution.</summary>

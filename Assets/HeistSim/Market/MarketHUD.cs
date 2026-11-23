@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using HeistSim.Market.UI;
 using TMPro;
 using UnityEngine;
+using UnityEngine.TextCore.LowLevel;
 using UnityEngine.UI;
 
 namespace HeistSim.Market
@@ -28,6 +29,8 @@ namespace HeistSim.Market
         private const float RefusalSeconds = 1.1f;
         private const float DetectionFlashSeconds = 0.35f;
         private const string RootName = "Redesign Root";
+        private const int HudSortingOrder = 60;
+        private const string FontFallbackLog = "Market HUD font fallback: MarketSans has no glyphs, using a dynamic font built from Resources/LiberationSans.";
 
         /// <summary>Heat tier name, shown beside the six notch spine.</summary>
         public TMP_Text heatText;
@@ -132,6 +135,23 @@ namespace HeistSim.Market
         private void Awake()
         {
             var font = Resources.Load<TMP_FontAsset>("MarketSans");
+            var usedFallback = false;
+            if (font == null || font.characterTable == null || font.characterTable.Count == 0)
+            {
+                var source = Resources.Load<Font>("LiberationSans");
+                if (source != null)
+                {
+                    font = TMP_FontAsset.CreateFontAsset(source, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024,
+                        AtlasPopulationMode.Dynamic, false);
+                    if (font != null)
+                    {
+                        font.TryAddCharacters(HudWidgets.AsciiCharacterSet(), out _, false);
+                        usedFallback = true;
+                        Debug.Log(FontFallbackLog);
+                    }
+                }
+            }
+
             var existing = transform.Find(RootName) as RectTransform;
             if (existing == null)
             {
@@ -145,10 +165,17 @@ namespace HeistSim.Market
                 LayoutPanels();
             }
 
-            var canvas = GetComponent<Canvas>();
-            if (canvas != null && canvas.worldCamera == null && canvas.renderMode == RenderMode.ScreenSpaceCamera)
+            if (usedFallback)
             {
-                canvas.worldCamera = Camera.main;
+                HudWidgets.ApplyFont(font, _redesignRoot);
+            }
+
+            var canvas = GetComponent<Canvas>();
+            if (canvas != null)
+            {
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.worldCamera = null;
+                canvas.sortingOrder = HudSortingOrder;
             }
         }
 

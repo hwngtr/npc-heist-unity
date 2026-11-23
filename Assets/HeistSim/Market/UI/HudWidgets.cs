@@ -1,3 +1,4 @@
+using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -27,6 +28,33 @@ namespace HeistSim.Market.UI
 
         /// <summary>Alpha of every panel that sits over the world, above the 0.9 floor in the spec.</summary>
         public const float PanelAlpha = 0.94f;
+
+        /// <summary>Printable ASCII plus the euro sign, used to bake every HUD glyph up front.</summary>
+        public static string AsciiCharacterSet()
+        {
+            var builder = new StringBuilder();
+            for (var c = ' '; c <= '~'; c++)
+            {
+                builder.Append(c);
+            }
+
+            builder.Append('\u20AC');
+            return builder.ToString();
+        }
+
+        /// <summary>Assigns a font to every text below a root, including inactive widgets.</summary>
+        public static void ApplyFont(TMP_FontAsset font, Transform root)
+        {
+            if (font == null || root == null)
+            {
+                return;
+            }
+
+            foreach (var text in root.GetComponentsInChildren<TMP_Text>(true))
+            {
+                text.font = font;
+            }
+        }
 
         /// <summary>Creates a bare rect transform below a parent.</summary>
         public static RectTransform Rect(string name, Transform parent)

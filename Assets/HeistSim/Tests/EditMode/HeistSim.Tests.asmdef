@@ -3,6 +3,7 @@
     "rootNamespace": "HeistSim.Tests",
     "references": [
         "HeistSim",
+        "HeistSim.Arena",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

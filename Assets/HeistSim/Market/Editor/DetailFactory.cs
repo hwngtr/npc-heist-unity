@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using HeistSim.Arena;
 using UnityEditor;
 using UnityEngine;
 
@@ -41,8 +42,10 @@ namespace HeistSim.Market.Editor
             for (var i = 0; i < parts.Length; i++)
             {
                 var part = parts[i];
-                var u = part.Offset.x * scaleX;
-                var v = part.Offset.z * scaleZ;
+                // Shape data stores offsets from the back corner, while MarketLayout anchors the root at the
+                // footprint centre. Centre each part before scaling so it renders inside its blocked tiles.
+                var u = (part.Offset.x - (float)kind.SizeI * 0.5f) * scaleX;
+                var v = (part.Offset.z - (float)kind.SizeJ * 0.5f) * scaleZ;
                 var position = alongX
                     ? new Vector3(u, part.Offset.y + baseY, v)
                     : new Vector3(v, part.Offset.y + baseY, u);
@@ -64,7 +67,7 @@ namespace HeistSim.Market.Editor
                 var size = alongX
                     ? new Vector3(part.Size.x * scaleX, part.Size.y, part.Size.z * scaleZ)
                     : new Vector3(part.Size.z * scaleX, part.Size.y, part.Size.x * scaleZ);
-                AddPart(root.transform, i, part, position, size, alongX);
+                AddPart(root.transform, i, part, position, size, alongX, true);
             }
 
             return root;
@@ -124,7 +127,14 @@ namespace HeistSim.Market.Editor
             return root;
         }
 
-        private static GameObject AddPart(Transform parent, int index, DetailPart part, Vector3 position, Vector3 size, bool alongX)
+        private static GameObject AddPart(
+            Transform parent,
+            int index,
+            DetailPart part,
+            Vector3 position,
+            Vector3 size,
+            bool alongX,
+            bool outline = false)
         {
             var type = part.Primitive switch
             {
@@ -162,6 +172,27 @@ namespace HeistSim.Market.Editor
             }
 
             child.GetComponent<MeshRenderer>().sharedMaterial = InkMaterial(part.Ink);
+
+            if (outline && part.Primitive == DetailPrimitive.Box && !part.Front
+                && part.Ink != InkRole.Black && part.Ink != InkRole.Paper
+                && size.x >= 0.8f && size.y >= 0.1f && size.z >= 0.3f)
+            {
+                // Web outlines fixture bodies with black strokes (market-app.js lines 1019, 1042 and 1049).
+                // A slightly larger black box behind each broad shell face gives the same separation in 3D.
+                var backing = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                backing.name = index.ToString("00") + " Outline";
+                var backingCollider = backing.GetComponent<Collider>();
+                if (backingCollider != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(backingCollider);
+                }
+
+                backing.transform.SetParent(parent, false);
+                backing.transform.localPosition = position;
+                backing.transform.localScale = new Vector3(size.x * 1.03f, size.y * 1.04f, size.z * 1.03f);
+                backing.GetComponent<MeshRenderer>().sharedMaterial = InkMaterial(InkRole.Black);
+            }
+
             return child;
         }
 
@@ -267,6 +298,8 @@ namespace HeistSim.Market.Editor
                 InkRole.Teal => "MarketTeal",
                 InkRole.Sun => "MarketSun",
                 InkRole.Coral => "MarketCoral",
+                InkRole.CoralInk => "MarketCoralInk",
+                InkRole.InkBlue2 => "MarketInkBlue2",
                 InkRole.Black => "MarketBlack",
                 _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Unknown ink role"),
             };
@@ -276,13 +309,15 @@ namespace HeistSim.Market.Editor
         {
             return role switch
             {
-                InkRole.Paper => MarketSceneSpec.Paper,
-                InkRole.Card => MarketSceneSpec.Card,
-                InkRole.Key => MarketSceneSpec.InkBlue,
-                InkRole.Teal => MarketSceneSpec.Teal,
-                InkRole.Sun => MarketSceneSpec.Sun,
-                InkRole.Coral => MarketSceneSpec.Coral,
-                InkRole.Black => MarketSceneSpec.Black,
+                InkRole.Paper => ArenaSpec.Paper,
+                InkRole.Card => ArenaSpec.Card,
+                InkRole.Key => ArenaSpec.InkBlue,
+                InkRole.InkBlue2 => ArenaSpec.InkBlue2,
+                InkRole.Teal => ArenaSpec.Teal,
+                InkRole.Sun => ArenaSpec.Sun,
+                InkRole.Coral => ArenaSpec.Coral,
+                InkRole.CoralInk => ArenaSpec.CoralInk,
+                InkRole.Black => ArenaSpec.Black,
                 _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Unknown ink role"),
             };
         }

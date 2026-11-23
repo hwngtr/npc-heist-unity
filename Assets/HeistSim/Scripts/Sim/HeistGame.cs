@@ -1495,7 +1495,9 @@ namespace HeistSim
             var points = new Vector2[route.Length];
             for (var i = 0; i < route.Length; i++)
             {
-                points[i] = new Vector2(route[i].X + 0.5f, route[i].Y + 0.5f);
+                points[i] = new Vector2(
+                    route[i].X + 0.5f + (float)route[i].OffsetI,
+                    route[i].Y + 0.5f);
             }
 
             return points;

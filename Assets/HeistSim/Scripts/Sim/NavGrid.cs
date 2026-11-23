@@ -6,11 +6,21 @@ namespace HeistSim
     /// <summary>Integer tile position on the navigation grid.</summary>
     public readonly struct GridPos : IEquatable<GridPos>
     {
-        /// <summary>Creates a tile position.</summary>
+        /// <summary>Creates a tile position at the tile centre.</summary>
         public GridPos(int x, int y)
+            : this(x, y, 0d)
+        {
+        }
+
+        /// <summary>
+        /// Creates a tile position with a fractional shift along the I axis. Route waypoints use this to
+        /// keep the browser game's exact continuous position without changing the integer tile grid.
+        /// </summary>
+        public GridPos(int x, int y, double offsetI)
         {
             X = x;
             Y = y;
+            OffsetI = offsetI;
         }
 
         /// <summary>Tile column.</summary>
@@ -19,9 +29,13 @@ namespace HeistSim
         /// <summary>Tile row.</summary>
         public int Y { get; }
 
+        /// <summary>Fractional shift from the tile centre along the I axis.</summary>
+        public double OffsetI { get; }
+
         /// <summary>Value equality on both coordinates.</summary>
         public bool Equals(GridPos other)
         {
+            // OffsetI is a presentation nudge, not part of tile identity.
             return X == other.X && Y == other.Y;
         }
 

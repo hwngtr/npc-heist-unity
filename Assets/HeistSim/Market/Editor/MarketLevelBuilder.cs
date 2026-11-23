@@ -816,10 +816,10 @@ namespace HeistSim.Market.Editor
         {
             var hudObject = new GameObject(MarketSceneSpec.RootHud);
             var canvas = hudObject.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceCamera;
-            canvas.worldCamera = camera;
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.worldCamera = null;
             canvas.planeDistance = 1f;
-            canvas.sortingOrder = 10;
+            canvas.sortingOrder = 60;
 
             var scaler = hudObject.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;

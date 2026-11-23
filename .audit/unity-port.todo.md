@@ -8,7 +8,7 @@ Phases:
 
 - [x] Stage 0a: web perf fix, pixel budget cap on the canvas backing store, landed as e98f619 in npc-stealth.
 - [x] Stage 0b: project scaffold, README, version pin 6000.6.10f1, manifest, layout.
-- [ ] Stage 1: AI core port. GuardPercepts, GuardIntent, GuardProfile ScriptableObject, table FSM, reactive BT, perception. EditMode parity and perception tests. Gate: batch-mode Test Runner green.
+- [x] Stage 1: AI core port. GuardPercepts, GuardIntent, GuardProfile ScriptableObject, table FSM, reactive BT, perception. EditMode parity and perception tests. Gate passed twice, once by the delegate, once by the owner: SUMMARY total=29 passed=29 failed=0. Manifest pins for inputsystem and tilemap.extras were bumped to 1.20.1 and 9.0.1 because the scaffold's originals do not compile on 6000.6.10f1.
 - [ ] Stage 2: sim domain port. Heat and tiers, objectives, timed channel, collision, BFS navgrid. EditMode tests mirror verify-market-heist cases. Gate: tier thresholds and channel rules match the web game.
 - [ ] Stage 3: rendering arena. Three riso approaches rendered as screenshots, user picks one. Gate: user decision recorded.
 - [ ] Stage 4: market level playable. Fixtures data, input, camera, HUD, CCTV sweep, guard and staff movement, radio backup. Gate: PlayMode scenario test passes.

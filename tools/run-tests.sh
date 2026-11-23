@@ -4,8 +4,8 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 UNITY="${UNITY:-/home/hwngtr/Unity/Hub/Editor/6000.6.10f1/Editor/Unity}"
-RESULTS="$ROOT/Tools/test-results.xml"
-LOG="$ROOT/Tools/test-run.log"
+RESULTS="$ROOT/tools/test-results.xml"
+LOG="$ROOT/tools/test-run.log"
 
 mkdir -p "$ROOT/Tools"
 rm -f "$RESULTS"

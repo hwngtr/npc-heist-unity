@@ -21,6 +21,12 @@ namespace HeistSim.Market.Editor
         private const string FollowingCharactersPath = MarketSceneSpec.ResourcesDir + "/LineBreaking Following Characters.txt";
         private const string TmpSettingsPath = MarketSceneSpec.ResourcesDir + "/TMP Settings.asset";
 
+        /// <summary>Gap kept between a camera visual and the floor edge, in tiles.</summary>
+        private const float CameraEdgeInset = 0.5f;
+
+        /// <summary>Height of the CCTV camera visual centre above the floor, in tiles.</summary>
+        private const float CameraHeight = 2.62f;
+
         /// <summary>Rebuilds the market scene and saves it over the existing asset.</summary>
         [MenuItem("Heist/Market/Build Level Scene")]
         public static void BuildLevel()
@@ -303,9 +309,12 @@ namespace HeistSim.Market.Editor
             {
                 var def = MarketData.Cameras[i];
                 var rig = NewGroup(cameras, def.Id);
-                rig.position = new Vector3((float)def.I, 0f, (float)def.J);
-                Box(rig, "Body", new Vector3(0f, 2.62f, 0f), new Vector3(0.42f, 0.26f, 0.36f), materials["inkBlue"]);
-                Box(rig, "Lens", new Vector3(0f, 2.58f, 0.22f), new Vector3(0.12f, 0.12f, 0.08f), materials["sun"]);
+                var tileX = Mathf.Clamp((float)def.I, CameraEdgeInset, MarketData.WidthTiles - CameraEdgeInset);
+                var tileZ = Mathf.Clamp((float)def.J, CameraEdgeInset, MarketData.HeightTiles - CameraEdgeInset);
+                rig.position = new Vector3(tileX, 0f, tileZ);
+                Box(rig, "Mount", new Vector3(0f, CameraHeight * 0.5f, 0f), new Vector3(0.08f, CameraHeight, 0.08f), materials["black"]);
+                Box(rig, "Body", new Vector3(0f, CameraHeight, 0f), new Vector3(0.42f, 0.26f, 0.36f), materials["inkBlue"]);
+                Box(rig, "Lens", new Vector3(0f, CameraHeight - 0.04f, 0.22f), new Vector3(0.12f, 0.12f, 0.08f), materials["sun"]);
 
                 var coneObject = new GameObject(MarketSceneSpec.ConeChild);
                 coneObject.transform.SetParent(rig, false);
@@ -367,20 +376,22 @@ namespace HeistSim.Market.Editor
         {
             player = NewGroup(actors, "Player");
             player.position = new Vector3(HeistGame.PlayerStart.x, 0f, HeistGame.PlayerStart.y);
-            Primitive(player, "Body", PrimitiveType.Capsule, new Vector3(0f, 0.65f, 0f), new Vector3(0.56f, 0.65f, 0.56f), materials["teal"]);
-            Primitive(player, "Cap", PrimitiveType.Cylinder, new Vector3(0f, 1.33f, 0f), new Vector3(0.62f, 0.04f, 0.62f), materials["sun"]);
+            Primitive(player, "Base", PrimitiveType.Cylinder, new Vector3(0f, 0.02f, 0f), new Vector3(1f, 0.04f, 1f), materials["black"]);
+            Primitive(player, "Body", PrimitiveType.Capsule, new Vector3(0f, 0.675f, 0f), new Vector3(0.64f, 0.675f, 0.64f), materials["teal"]);
+            Primitive(player, "Cap", PrimitiveType.Cylinder, new Vector3(0f, 1.38f, 0f), new Vector3(0.7f, 0.05f, 0.7f), materials["sun"]);
 
             guard = NewGroup(actors, "Guard");
             guard.position = new Vector3(HeistGame.GuardStart.x, 0f, HeistGame.GuardStart.y);
             guard.rotation = Quaternion.Euler(0f, -1.5f * Mathf.Rad2Deg, 0f);
-            Primitive(guard, "Base", PrimitiveType.Cylinder, new Vector3(0f, 0.02f, 0f), new Vector3(0.84f, 0.02f, 0.84f), materials["black"]);
-            Primitive(guard, "Body", PrimitiveType.Cylinder, new Vector3(0f, 0.66f, 0f), new Vector3(0.6f, 0.62f, 0.6f), materials["inkBlue"]);
-            Primitive(guard, "Cap", PrimitiveType.Cylinder, new Vector3(0f, 1.33f, 0f), new Vector3(0.66f, 0.05f, 0.66f), materials["coral"]);
+            Primitive(guard, "Base", PrimitiveType.Cylinder, new Vector3(0f, 0.02f, 0f), new Vector3(1f, 0.04f, 1f), materials["black"]);
+            Primitive(guard, "Body", PrimitiveType.Cylinder, new Vector3(0f, 0.675f, 0f), new Vector3(0.64f, 0.675f, 0.64f), materials["inkBlue"]);
+            Primitive(guard, "Cap", PrimitiveType.Cylinder, new Vector3(0f, 1.38f, 0f), new Vector3(0.7f, 0.05f, 0.7f), materials["coral"]);
 
             staff = NewGroup(actors, "Staff");
             staff.position = new Vector3(HeistGame.StaffStart.x, 0f, HeistGame.StaffStart.y);
-            Primitive(staff, "Body", PrimitiveType.Cylinder, new Vector3(0f, 0.62f, 0f), new Vector3(0.56f, 0.6f, 0.56f), materials["sun"]);
-            Primitive(staff, "Cap", PrimitiveType.Cylinder, new Vector3(0f, 1.26f, 0f), new Vector3(0.6f, 0.05f, 0.6f), materials["coral"]);
+            Primitive(staff, "Base", PrimitiveType.Cylinder, new Vector3(0f, 0.02f, 0f), new Vector3(1f, 0.04f, 1f), materials["black"]);
+            Primitive(staff, "Body", PrimitiveType.Cylinder, new Vector3(0f, 0.675f, 0f), new Vector3(0.64f, 0.675f, 0.64f), materials["sun"]);
+            Primitive(staff, "Cap", PrimitiveType.Cylinder, new Vector3(0f, 1.38f, 0f), new Vector3(0.7f, 0.05f, 0.7f), materials["coral"]);
 
             var fanObject = new GameObject("Guard Vision Fan");
             fanObject.transform.SetParent(actors, false);

@@ -71,7 +71,8 @@ namespace HeistSim.Market
                 return false;
             }
 
-            var panel = CreateImage("Panel", transform, MarketSceneSpec.Card, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -24f), new Vector2(392f, 396f));
+            var panelColor = new Color(MarketSceneSpec.Card.r, MarketSceneSpec.Card.g, MarketSceneSpec.Card.b, 0.9f);
+            var panel = CreateImage("Panel", transform, panelColor, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(12f, -8f), new Vector2(392f, 384f));
             panel.rectTransform.pivot = new Vector2(0f, 1f);
 
             var ink = MarketSceneSpec.InkBlue2;

@@ -17,7 +17,11 @@ namespace HeistSim.Market.Editor
         private const float SurfaceBase = 0.95f;
         private const float LootScale = 0.5f;
 
+        /// <summary>Outward nudge for product parts so they clear the fixture shell on the camera facing side.</summary>
+        private const float FrontNudge = 0.02f;
+
         private static readonly Dictionary<InkRole, Material> Materials = new Dictionary<InkRole, Material>();
+        private static Mesh _coneMesh;
 
         /// <summary>Creates a fixture root whose children are the web game part list for the kind.</summary>
         public static GameObject BuildFixture(string kindId, string face = "ne")
@@ -42,6 +46,21 @@ namespace HeistSim.Market.Editor
                 var position = alongX
                     ? new Vector3(u, part.Offset.y + baseY, v)
                     : new Vector3(v, part.Offset.y + baseY, u);
+                if (part.Front)
+                {
+                    // The front of a fixture is +Z for axis keeping faces and +X for axis swapping faces.
+                    if (alongX)
+                    {
+                        position.z += FrontNudge;
+                    }
+                    else
+                    {
+                        position.x += FrontNudge;
+                    }
+
+                    position.y += FrontNudge * 0.5f;
+                }
+
                 var size = alongX
                     ? new Vector3(part.Size.x * scaleX, part.Size.y, part.Size.z * scaleZ)
                     : new Vector3(part.Size.z * scaleX, part.Size.y, part.Size.x * scaleZ);
@@ -107,9 +126,13 @@ namespace HeistSim.Market.Editor
 
         private static GameObject AddPart(Transform parent, int index, DetailPart part, Vector3 position, Vector3 size, bool alongX)
         {
-            var type = part.Primitive == DetailPrimitive.Box ? PrimitiveType.Cube
-                : part.Primitive == DetailPrimitive.Quad ? PrimitiveType.Quad
-                : PrimitiveType.Cylinder;
+            var type = part.Primitive switch
+            {
+                DetailPrimitive.Box => PrimitiveType.Cube,
+                DetailPrimitive.Quad => PrimitiveType.Quad,
+                DetailPrimitive.Sphere => PrimitiveType.Sphere,
+                _ => PrimitiveType.Cylinder,
+            };
 
             var child = GameObject.CreatePrimitive(type);
             child.name = index.ToString("00") + " " + part.Primitive + (part.Tiny ? " Detail" : "");
@@ -122,6 +145,11 @@ namespace HeistSim.Market.Editor
             child.transform.SetParent(parent, false);
             child.transform.localPosition = position;
             child.transform.localScale = PartScale(part, size);
+
+            if (part.Primitive == DetailPrimitive.Cone)
+            {
+                child.GetComponent<MeshFilter>().sharedMesh = ConeMesh();
+            }
 
             if (type == PrimitiveType.Quad)
             {
@@ -154,6 +182,49 @@ namespace HeistSim.Market.Editor
             }
 
             return new Vector3(x, y, z);
+        }
+
+        /// <summary>
+        /// Builds one shared unit cone, one unit tall with its apex at y = 0.5. The cone stands in for gable
+        /// tops, bottle shoulders and carrot tips while the seven flat material assets stay unchanged.
+        /// </summary>
+        private static Mesh ConeMesh()
+        {
+            if (_coneMesh != null)
+            {
+                return _coneMesh;
+            }
+
+            const int segments = 12;
+            var vertices = new Vector3[segments + 2];
+            var triangles = new int[segments * 6];
+            vertices[0] = new Vector3(0f, 0.5f, 0f);
+            vertices[1] = new Vector3(0f, -0.5f, 0f);
+            for (var i = 0; i < segments; i++)
+            {
+                var angle = i * Mathf.PI * 2f / segments;
+                vertices[i + 2] = new Vector3(Mathf.Cos(angle) * 0.5f, -0.5f, Mathf.Sin(angle) * 0.5f);
+            }
+
+            var t = 0;
+            for (var i = 0; i < segments; i++)
+            {
+                var next = (i + 1) % segments;
+                triangles[t++] = 0;
+                triangles[t++] = next + 2;
+                triangles[t++] = i + 2;
+                triangles[t++] = 1;
+                triangles[t++] = i + 2;
+                triangles[t++] = next + 2;
+            }
+
+            var mesh = new Mesh { name = "Market Product Cone" };
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            _coneMesh = mesh;
+            return mesh;
         }
 
         private static Material InkMaterial(InkRole role)

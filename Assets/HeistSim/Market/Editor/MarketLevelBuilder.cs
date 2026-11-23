@@ -190,15 +190,16 @@ namespace HeistSim.Market.Editor
             var cameraObject = new GameObject(MarketSceneSpec.RootCamera) { tag = "MainCamera" };
             var camera = cameraObject.AddComponent<Camera>();
             camera.orthographic = true;
-            camera.orthographicSize = MarketSceneSpec.OrthographicSize;
+            camera.orthographicSize = MarketRunner.FollowOrthographicSize;
             camera.nearClipPlane = 0.1f;
             camera.farClipPlane = 200f;
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = MarketSceneSpec.Paper;
             camera.allowHDR = false;
             camera.allowMSAA = false;
-            cameraObject.transform.position = MarketSceneSpec.CameraPosition;
-            cameraObject.transform.LookAt(MarketSceneSpec.CameraTarget);
+            var playerStart = new Vector3(HeistGame.PlayerStart.x, 0f, HeistGame.PlayerStart.y);
+            cameraObject.transform.position = playerStart + MarketRunner.CameraOffset;
+            cameraObject.transform.rotation = Quaternion.LookRotation(-MarketRunner.CameraOffset.normalized, Vector3.up);
 
             var dither = cameraObject.AddComponent<IsoDitherPost>();
             dither.postMaterial = materials["post"];

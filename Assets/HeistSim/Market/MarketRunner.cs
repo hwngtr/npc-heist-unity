@@ -32,6 +32,21 @@ namespace HeistSim.Market
         /// <summary>HUD refresh interval in frames.</summary>
         public const int HudFrameInterval = 6;
 
+        /// <summary>Orthographic half height at gameplay zoom, showing about 18 tiles vertically.</summary>
+        public const float FollowOrthographicSize = 9f;
+
+        /// <summary>Smallest orthographic half height allowed by the mouse wheel.</summary>
+        public const float MinOrthographicSize = 8f;
+
+        /// <summary>Largest orthographic half height allowed by the mouse wheel.</summary>
+        public const float MaxOrthographicSize = 24f;
+
+        /// <summary>Fixed isometric offset from the player to the camera. Positive X and Z show product fronts.</summary>
+        public static readonly Vector3 CameraOffset = new Vector3(13f, 16f, 13f);
+
+        /// <summary>Exponential smoothing rate used when the camera closes on the player.</summary>
+        public const float CameraSmoothing = 9f;
+
         /// <summary>Keys the IMGUI reader consumes, independent of Active Input Handling.</summary>
         private static readonly HashSet<KeyCode> TrackedGuiKeys = new HashSet<KeyCode>
         {
@@ -61,6 +76,8 @@ namespace HeistSim.Market
         private bool _inputFallbackWarned;
         private bool _legacyInputWarned;
         private bool _imguiActiveLogged;
+        private Camera _camera;
+        private float _orthographicSize = FollowOrthographicSize;
 
         /// <summary>The live game, one per shift.</summary>
         public HeistGame Game => _game;
@@ -77,6 +94,8 @@ namespace HeistSim.Market
 
             ResolveBindings();
             SnapCameraCones();
+            ResolveCamera();
+            SnapCameraToPlayer();
         }
 
         private void Update()
@@ -107,6 +126,7 @@ namespace HeistSim.Market
             var snapshot = _game.Snapshot();
             TrackAction(dt, input, snapshot);
             SyncActors(snapshot);
+            FollowCamera();
 
             if (_frame % HudFrameInterval == 0 || toggle)
             {
@@ -129,6 +149,7 @@ namespace HeistSim.Market
             _lastCamerasDisabled = false;
             _lastVitrineOpen = false;
             SyncActors(_game.Snapshot());
+            SnapCameraToPlayer();
         }
 
         private HeistGame CreateGame()
@@ -315,6 +336,41 @@ namespace HeistSim.Market
             cameraCones = cones;
         }
 
+        private void ResolveCamera()
+        {
+            _camera = Camera.main;
+            if (_camera == null)
+            {
+                _camera = FindAnyObjectByType<Camera>();
+            }
+        }
+
+        private void SnapCameraToPlayer()
+        {
+            if (_camera == null || playerRoot == null)
+            {
+                return;
+            }
+
+            _camera.orthographic = true;
+            _camera.orthographicSize = _orthographicSize;
+            _camera.transform.position = playerRoot.position + CameraOffset;
+            _camera.transform.rotation = Quaternion.LookRotation(-CameraOffset.normalized, Vector3.up);
+        }
+
+        private void FollowCamera()
+        {
+            if (_camera == null || playerRoot == null)
+            {
+                return;
+            }
+
+            var target = playerRoot.position + CameraOffset;
+            var t = 1f - Mathf.Exp(-CameraSmoothing * Mathf.Min(Time.deltaTime, MaxDeltaTime));
+            _camera.transform.position = Vector3.Lerp(_camera.transform.position, target, t);
+            _camera.transform.rotation = Quaternion.LookRotation(-CameraOffset.normalized, Vector3.up);
+        }
+
         private static Transform FindDeep(Transform root, string name)
         {
             if (root == null)
@@ -345,6 +401,20 @@ namespace HeistSim.Market
             var current = Event.current;
             if (current == null)
             {
+                return;
+            }
+
+            if (current.type == EventType.ScrollWheel)
+            {
+                var wheel = Mathf.Clamp(current.delta.y, -3f, 3f);
+                _orthographicSize = Mathf.Clamp(
+                    _orthographicSize + wheel * 0.5f, MinOrthographicSize, MaxOrthographicSize);
+                if (_camera != null)
+                {
+                    _camera.orthographicSize = _orthographicSize;
+                }
+
+                current.Use();
                 return;
             }
 

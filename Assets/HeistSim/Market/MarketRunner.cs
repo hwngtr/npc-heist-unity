@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using HeistSim.Arena;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -59,6 +61,7 @@ namespace HeistSim.Market
 
         private readonly HashSet<KeyCode> _guiKeys = new HashSet<KeyCode>();
         private readonly Dictionary<KeyCode, int> _guiKeyDownFrame = new Dictionary<KeyCode, int>();
+        private readonly HashSet<string> _lastBagIds = new HashSet<string>(StringComparer.Ordinal);
 
         private HeistGame _game;
         private GuardProfile _profile;
@@ -69,15 +72,26 @@ namespace HeistSim.Market
         private float _clock;
         private float _guardAngle = 1.5f;
         private Vector2 _lastGuard = HeistGame.GuardStart;
-        private float _actionHold;
         private int _lastBagCount;
         private bool _lastCamerasDisabled;
         private bool _lastVitrineOpen;
+        private int _lastActiveTags;
+        private bool _lastBackup;
+        private bool _lastExitBlocked;
+        private int _lastEasAlarm;
+        private int _lastCameraSightings;
+        private string _lastChannelKind;
+        private ChannelResult _lastChannelResult;
+        private string _lastGuardState = "patrol";
         private bool _inputFallbackWarned;
         private bool _legacyInputWarned;
         private bool _imguiActiveLogged;
         private Camera _camera;
         private float _orthographicSize = FollowOrthographicSize;
+        private TMP_Text _guardBubble;
+        private LineRenderer _lastSeenRing;
+        private Material[] _coneBaseMaterials = Array.Empty<Material>();
+        private Material[] _coneAlertMaterials = Array.Empty<Material>();
 
         /// <summary>The live game, one per shift.</summary>
         public HeistGame Game => _game;
@@ -93,6 +107,8 @@ namespace HeistSim.Market
             _lastGuard = _game.Snapshot().Guard;
 
             ResolveBindings();
+            EnsureGuardBubble();
+            EnsureLastSeenRing();
             SnapCameraCones();
             ResolveCamera();
             SnapCameraToPlayer();
@@ -124,7 +140,6 @@ namespace HeistSim.Market
 
             _game.Step(dt, input);
             var snapshot = _game.Snapshot();
-            TrackAction(dt, input, snapshot);
             SyncActors(snapshot);
             FollowCamera();
 
@@ -144,10 +159,24 @@ namespace HeistSim.Market
             _clock = 0f;
             _guardAngle = 1.5f;
             _lastGuard = _game.Snapshot().Guard;
-            _actionHold = 0f;
             _lastBagCount = 0;
             _lastCamerasDisabled = false;
             _lastVitrineOpen = false;
+            _lastActiveTags = 0;
+            _lastBackup = false;
+            _lastExitBlocked = false;
+            _lastEasAlarm = 0;
+            _lastCameraSightings = 0;
+            _lastBagIds.Clear();
+            _lastChannelKind = null;
+            _lastChannelResult = ChannelResult.None;
+            _lastGuardState = "patrol";
+            if (hud != null)
+            {
+                hud.ClearFeed();
+                hud.HidePrompt();
+            }
+
             SyncActors(_game.Snapshot());
             SnapCameraToPlayer();
         }
@@ -172,29 +201,135 @@ namespace HeistSim.Market
 
             var snapshot = _game.Snapshot();
             var hint = MarketInteractions.Probe(snapshot);
-            hud.Refresh(snapshot, hint, MarketInteractions.Progress(_actionHold, hint));
+            hud.Refresh(snapshot, hint, 0f);
+            ShowPrompt(snapshot, hint);
+            TrackSignals(snapshot);
         }
 
-        private void TrackAction(float dt, in HeistInput input, in HeistSnapshot snapshot)
+        private void ShowPrompt(in HeistSnapshot snapshot, in MarketActionHint hint)
         {
-            if (input.Action && snapshot.Outcome == HeistOutcome.None)
+            if (!hint.Found || _camera == null || string.IsNullOrEmpty(hint.Prompt))
             {
-                _actionHold += dt;
-            }
-            else
-            {
-                _actionHold = 0f;
+                hud.HidePrompt();
+                return;
             }
 
-            if (snapshot.BagCount != _lastBagCount
-                || snapshot.CamerasDisabled != _lastCamerasDisabled
-                || snapshot.VitrineOpen != _lastVitrineOpen)
+            var world = new Vector3(hint.Target.x, 1.1f, hint.Target.y);
+            var screen = _camera.WorldToScreenPoint(world);
+            if (screen.z <= 0f)
             {
-                _actionHold = 0f;
-                _lastBagCount = snapshot.BagCount;
-                _lastCamerasDisabled = snapshot.CamerasDisabled;
-                _lastVitrineOpen = snapshot.VitrineOpen;
+                hud.HidePrompt();
+                return;
             }
+
+            hud.ShowPrompt(screen, hint.Prompt);
+        }
+
+        private void TrackSignals(in HeistSnapshot snapshot)
+        {
+            if (snapshot.ExitBlockedByTags && !_lastExitBlocked)
+            {
+                hud.ShowRefusal("EAS ALARM de-tag first");
+            }
+
+            switch (snapshot.LastInteraction)
+            {
+                case InteractOutcome.BagFull:
+                    hud.ShowRefusal("BAG FULL");
+                    break;
+                case InteractOutcome.BlockedLineOfSight:
+                    hud.ShowRefusal("BLOCKED (LOS)");
+                    break;
+                case InteractOutcome.PanelOutOfReach:
+                    hud.ShowRefusal("PANEL OUT OF REACH");
+                    break;
+            }
+
+            if (snapshot.FirstDetectionEdge)
+            {
+                hud.FlashDetection();
+                hud.PushFeed("ALARM", "Spotted");
+            }
+
+            var alarmedGuard = snapshot.GuardState == "chase" || snapshot.GuardState == "attack";
+            var wasAlarmed = _lastGuardState == "chase" || _lastGuardState == "attack";
+            if (alarmedGuard && !wasAlarmed)
+            {
+                hud.PushFeed("ALARM", "Guard is alert");
+            }
+
+            if (snapshot.EasAlarmTicks > 0 && _lastEasAlarm == 0)
+            {
+                hud.PushFeed("ALARM", "EAS alarm, de-tag first");
+            }
+
+            if (snapshot.CameraSightings != 0 && _lastCameraSightings == 0)
+            {
+                hud.PushFeed("CCTV", "Camera sighting");
+            }
+
+            var hasBackup = snapshot.HasBackup;
+            if (hasBackup && !_lastBackup)
+            {
+                hud.PushFeed("BACKUP", "Backup dispatched");
+            }
+
+            if (snapshot.BagCount > _lastBagCount && snapshot.Bag != null)
+            {
+                for (var i = 0; i < snapshot.Bag.Count; i++)
+                {
+                    var id = snapshot.Bag[i];
+                    if (_lastBagIds.Contains(id))
+                    {
+                        continue;
+                    }
+
+                    var loot = MarketData.LootFor(id);
+                    hud.PushFeed("STEAL", "Stolen " + (loot.HasValue ? loot.Value.Label : id));
+                }
+            }
+
+            if (_lastChannelResult == ChannelResult.Running && snapshot.LastChannelResult == ChannelResult.Cancelled)
+            {
+                var kind = string.IsNullOrEmpty(_lastChannelKind) ? "action" : _lastChannelKind;
+                hud.PushFeed("ALARM", "Channel cancelled: " + kind);
+            }
+
+            if (_lastCamerasDisabled != snapshot.CamerasDisabled && snapshot.CamerasDisabled)
+            {
+                hud.PushFeed("CCTV", "CCTV power cut");
+            }
+
+            if (_lastVitrineOpen != snapshot.VitrineOpen && snapshot.VitrineOpen)
+            {
+                hud.PushFeed("STEAL", "Vitrine open");
+            }
+
+            if (_lastActiveTags > 0 && snapshot.ActiveTags == 0)
+            {
+                hud.PushFeed("CCTV", "Tags cleared");
+            }
+
+            _lastBagCount = snapshot.BagCount;
+            _lastBagIds.Clear();
+            if (snapshot.Bag != null)
+            {
+                foreach (var id in snapshot.Bag)
+                {
+                    _lastBagIds.Add(id);
+                }
+            }
+
+            _lastCamerasDisabled = snapshot.CamerasDisabled;
+            _lastVitrineOpen = snapshot.VitrineOpen;
+            _lastActiveTags = snapshot.ActiveTags;
+            _lastEasAlarm = snapshot.EasAlarmTicks;
+            _lastBackup = hasBackup;
+            _lastExitBlocked = snapshot.ExitBlockedByTags;
+            _lastCameraSightings = snapshot.CameraSightings;
+            _lastChannelKind = snapshot.ChannelKind;
+            _lastChannelResult = snapshot.LastChannelResult;
+            _lastGuardState = snapshot.GuardState;
         }
 
         private void SyncActors(in HeistSnapshot snapshot)
@@ -209,7 +344,8 @@ namespace HeistSim.Market
                 staffRoot.position = new Vector3(snapshot.Staff.x, 0f, snapshot.Staff.y);
             }
 
-            var alarmed = snapshot.GuardState == "chase" || snapshot.GuardState == "attack";
+            var state = snapshot.GuardState;
+            var alarmed = state == "chase" || state == "attack";
             if (alarmed)
             {
                 _guardAngle = Mathf.Atan2(snapshot.Player.y - snapshot.Guard.y, snapshot.Player.x - snapshot.Guard.x);
@@ -232,21 +368,23 @@ namespace HeistSim.Market
             if (visionFan != null)
             {
                 visionFan.transform.position = new Vector3(snapshot.Guard.x, 0.06f, snapshot.Guard.y);
-                visionFan.Apply(_guardAngle, _profile.fov_half_angle, _profile.fov_distance, alarmed);
+                visionFan.Apply(_guardAngle, _profile.fov_half_angle, _profile.fov_distance, state);
             }
 
-            SyncCameraCones(snapshot.Tier);
+            UpdateGuardBubble(snapshot);
+            SyncCameraCones(snapshot);
             SyncLoot(snapshot);
             _lastGuard = snapshot.Guard;
         }
 
-        private void SyncCameraCones(int tier)
+        private void SyncCameraCones(in HeistSnapshot snapshot)
         {
             if (cameraCones == null)
             {
                 return;
             }
 
+            EnsureConeMaterials();
             var count = Mathf.Min(cameraCones.Length, MarketData.Cameras.Length);
             for (var i = 0; i < count; i++)
             {
@@ -257,11 +395,183 @@ namespace HeistSim.Market
                 }
 
                 var def = MarketData.Cameras[i];
-                var boost = 1f + Mathf.Max(0, tier - 1) * 0.08f;
+                var boost = 1f + Mathf.Max(0, snapshot.Tier - 1) * 0.08f;
                 var angle = def.BaseAngle + Math.Sin(_clock * def.SweepSpeed * boost + def.I) * def.SweepAmp;
                 cone.rotation = Quaternion.Euler(0f, -(float)angle * Mathf.Rad2Deg, 0f);
                 cone.localScale = new Vector3((float)def.Range, 1f, (float)def.Range);
+
+                if (i < _coneBaseMaterials.Length)
+                {
+                    var renderer = cone.GetComponent<Renderer>();
+                    if (renderer != null)
+                    {
+                        renderer.sharedMaterial = snapshot.CameraSees(i)
+                            ? _coneAlertMaterials[i]
+                            : _coneBaseMaterials[i];
+                    }
+                }
             }
+
+            UpdateLastSeenRing(snapshot.LastSeenPos);
+        }
+
+        private void EnsureConeMaterials()
+        {
+            if (_coneBaseMaterials.Length == cameraCones.Length)
+            {
+                return;
+            }
+
+            _coneBaseMaterials = new Material[cameraCones.Length];
+            _coneAlertMaterials = new Material[cameraCones.Length];
+            for (var i = 0; i < cameraCones.Length; i++)
+            {
+                var cone = cameraCones[i];
+                if (cone == null)
+                {
+                    continue;
+                }
+
+                var renderer = cone.GetComponent<Renderer>();
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                _coneBaseMaterials[i] = renderer.sharedMaterial;
+                var source = renderer.sharedMaterial != null
+                    ? renderer.sharedMaterial
+                    : new Material(Shader.Find("Sprites/Default"));
+                _coneAlertMaterials[i] = new Material(source)
+                {
+                    name = "MarketConeCoral (Instance)",
+                    color = ArenaSpec.Coral,
+                };
+            }
+        }
+
+        private void EnsureGuardBubble()
+        {
+            if (_guardBubble != null || guardRoot == null)
+            {
+                return;
+            }
+
+            var bubble = new GameObject("Guard Alert Bubble");
+            bubble.transform.SetParent(guardRoot, false);
+            bubble.transform.localPosition = new Vector3(0f, 2.1f, 0f);
+            var label = bubble.AddComponent<TextMeshPro>();
+            var font = Resources.Load<TMP_FontAsset>("MarketSans");
+            if (font != null)
+            {
+                label.font = font;
+            }
+
+            label.fontSize = 2.6f;
+            label.fontStyle = FontStyles.Bold;
+            label.alignment = TextAlignmentOptions.Center;
+            label.color = ArenaSpec.Sun;
+            label.text = string.Empty;
+            label.rectTransform.sizeDelta = new Vector2(2.6f, 1.4f);
+            label.sortingOrder = 20;
+            label.gameObject.SetActive(false);
+            _guardBubble = label;
+        }
+
+        private void UpdateGuardBubble(in HeistSnapshot snapshot)
+        {
+            if (_guardBubble == null)
+            {
+                return;
+            }
+
+            var state = snapshot.GuardState;
+            string mark;
+            switch (state)
+            {
+                case "investigate":
+                case "search":
+                    mark = "?";
+                    break;
+                case "chase":
+                    mark = "!";
+                    break;
+                case "attack":
+                    mark = "!!";
+                    break;
+                default:
+                    mark = string.Empty;
+                    break;
+            }
+
+            var visible = mark.Length > 0;
+            if (_guardBubble.gameObject.activeSelf != visible)
+            {
+                _guardBubble.gameObject.SetActive(visible);
+            }
+
+            if (!visible)
+            {
+                return;
+            }
+
+            _guardBubble.text = mark;
+            var tint = GuardVisionFan.TintFor(state);
+            _guardBubble.color = tint;
+            if (_camera != null)
+            {
+                _guardBubble.transform.rotation = _camera.transform.rotation;
+            }
+        }
+
+        private void EnsureLastSeenRing()
+        {
+            if (_lastSeenRing != null)
+            {
+                return;
+            }
+
+            var ring = new GameObject("Last Seen Ring").AddComponent<LineRenderer>();
+            ring.useWorldSpace = true;
+            ring.loop = false;
+            ring.positionCount = 24;
+            ring.startWidth = 0.09f;
+            ring.endWidth = 0.09f;
+            ring.material = new Material(Shader.Find("Sprites/Default"))
+            {
+                name = "Last Seen Ring (Instance)",
+                color = ArenaSpec.CoralInk,
+            };
+            ring.startColor = ArenaSpec.CoralInk;
+            ring.endColor = ArenaSpec.CoralInk;
+            ring.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            ring.receiveShadows = false;
+            ring.enabled = false;
+            _lastSeenRing = ring;
+        }
+
+        private void UpdateLastSeenRing(Vector2? position)
+        {
+            EnsureLastSeenRing();
+            if (!position.HasValue)
+            {
+                _lastSeenRing.enabled = false;
+                return;
+            }
+
+            const int dashes = 12;
+            const float radius = 0.8f;
+            var centre = new Vector3(position.Value.x, 0.1f, position.Value.y);
+            _lastSeenRing.positionCount = dashes * 2;
+            for (var dash = 0; dash < dashes; dash++)
+            {
+                var start = dash / (float)dashes * Mathf.PI * 2f;
+                var end = start + Mathf.PI * 2f / dashes * 0.6f;
+                _lastSeenRing.SetPosition(dash * 2, centre + new Vector3(Mathf.Cos(start) * radius, 0f, Mathf.Sin(start) * radius));
+                _lastSeenRing.SetPosition(dash * 2 + 1, centre + new Vector3(Mathf.Cos(end) * radius, 0f, Mathf.Sin(end) * radius));
+            }
+
+            _lastSeenRing.enabled = true;
         }
 
         private void SyncLoot(in HeistSnapshot snapshot)
@@ -278,6 +588,10 @@ namespace HeistSim.Market
                 {
                     marker.gameObject.SetActive(!stolen);
                 }
+
+                var loot = MarketData.LootFor(marker.lootId);
+                var tagged = loot.HasValue && loot.Value.Tagged && snapshot.ActiveTags > 0 && !stolen;
+                marker.SetTagVisible(tagged);
             }
         }
 

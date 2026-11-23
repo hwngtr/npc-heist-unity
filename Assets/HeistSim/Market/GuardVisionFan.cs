@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using HeistSim.Arena;
 using UnityEngine;
 
 namespace HeistSim.Market
@@ -11,19 +12,60 @@ namespace HeistSim.Market
         /// <summary>Base material for the fan, the component clones it so it can tint per frame.</summary>
         public Material fanMaterial;
 
-        /// <summary>Half angle of the fan in radians.</summary>
+        /// <summary>Half angle of the fan in radians before state widening.</summary>
         public float halfAngle = 0.6f;
 
         /// <summary>Sight range of the fan in tiles.</summary>
         public float range = 5.4f;
 
-        /// <summary>Alpha of the fan fill.</summary>
-        public float alpha = 0.34f;
+        /// <summary>Minimum alpha of the fan fill, kept for Inspector tuning.</summary>
+        public float alpha = 0.44f;
 
         private const int Segments = 24;
         private Mesh _mesh;
         private Material _runtimeMaterial;
         private float _builtHalfAngle = -1f;
+
+        /// <summary>Maps a guard state name to its shared palette ink.</summary>
+        public static Color TintFor(string guardState)
+        {
+            return guardState switch
+            {
+                "attack" => ArenaSpec.CoralInk,
+                "chase" => ArenaSpec.Coral,
+                "investigate" => ArenaSpec.Sun,
+                "search" => ArenaSpec.Sun,
+                "idle" => ArenaSpec.InkBlue2,
+                _ => ArenaSpec.Teal,
+            };
+        }
+
+        /// <summary>Fill alpha for a guard state, always stronger than the old flat 0.34.</summary>
+        public static float AlphaFor(string guardState)
+        {
+            return guardState switch
+            {
+                "attack" => 0.60f,
+                "chase" => 0.54f,
+                "investigate" => 0.48f,
+                "search" => 0.48f,
+                "idle" => 0.42f,
+                _ => 0.44f,
+            };
+        }
+
+        /// <summary>Fan width multiplier for a guard state, widening on alert states.</summary>
+        public static float WidthFor(string guardState)
+        {
+            return guardState switch
+            {
+                "attack" => 1.20f,
+                "chase" => 1.18f,
+                "investigate" => 1.08f,
+                "search" => 1.08f,
+                _ => 1f,
+            };
+        }
 
         private void Awake()
         {
@@ -40,22 +82,24 @@ namespace HeistSim.Market
             filter.sharedMesh = _mesh;
         }
 
-        /// <summary>Places and tints the fan for the current guard facing and state.</summary>
-        public void Apply(float angleRadians, float sightHalfAngle, float sightRange, bool alarmed)
+        /// <summary>Places and tints the fan for the current guard facing and state name.</summary>
+        public void Apply(float angleRadians, float sightHalfAngle, float sightRange, string guardState)
         {
             Ensure();
-            if (!Mathf.Approximately(sightHalfAngle, _builtHalfAngle))
+            var effectiveHalf = Mathf.Clamp(sightHalfAngle * WidthFor(guardState), 0.08f, Mathf.PI * 0.9f);
+            if (!Mathf.Approximately(effectiveHalf, _builtHalfAngle))
             {
-                Rebuild(sightHalfAngle);
+                Rebuild(effectiveHalf);
             }
 
             range = Mathf.Max(0.5f, sightRange);
             transform.localScale = new Vector3(range, 1f, range);
             transform.rotation = Quaternion.Euler(0f, -angleRadians * Mathf.Rad2Deg, 0f);
-            var tint = alarmed ? MarketSceneSpec.Coral : MarketSceneSpec.Teal;
+            var tint = TintFor(guardState);
+            var fill = Mathf.Max(alpha, AlphaFor(guardState));
             if (_runtimeMaterial != null)
             {
-                _runtimeMaterial.color = new Color(tint.r, tint.g, tint.b, alpha);
+                _runtimeMaterial.color = new Color(tint.r, tint.g, tint.b, fill);
             }
         }
 

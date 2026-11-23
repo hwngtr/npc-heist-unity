@@ -6,11 +6,13 @@ namespace HeistSim.Market
     public readonly struct MarketActionHint
     {
         /// <summary>Creates an action hint.</summary>
-        public MarketActionHint(bool found, string label, float hold)
+        public MarketActionHint(bool found, string label, float hold, Vector2 target, string prompt)
         {
             Found = found;
             Label = label;
             Hold = hold;
+            Target = target;
+            Prompt = prompt;
         }
 
         /// <summary>Whether an interaction is in reach.</summary>
@@ -21,6 +23,12 @@ namespace HeistSim.Market
 
         /// <summary>Hold time in seconds that the sim requires for this interaction.</summary>
         public float Hold { get; }
+
+        /// <summary>Target position in tile coordinates, used to anchor the on-screen prompt.</summary>
+        public Vector2 Target { get; }
+
+        /// <summary>Prompt text for the in-range badge.</summary>
+        public string Prompt { get; }
 
         /// <summary>No interaction in reach.</summary>
         public static MarketActionHint None => default;
@@ -39,33 +47,44 @@ namespace HeistSim.Market
         /// <summary>Returns the interaction the action button would start from the snapshot player position.</summary>
         public static MarketActionHint Probe(in HeistSnapshot snapshot)
         {
-            var player = snapshot.Player;
-
-            var panel = new Vector2((float)MarketData.Panel.I, (float)MarketData.Panel.J);
-            if (!snapshot.CamerasDisabled && Vector2.Distance(player, panel) <= PanelRange)
-            {
-                return new MarketActionHint(true, "Cutting the power", PowerHold);
-            }
-
-            var detagger = new Vector2((float)MarketData.Detagger.I, (float)MarketData.Detagger.J);
-            if (Vector2.Distance(player, detagger) <= DetaggerRange)
-            {
-                return new MarketActionHint(true, "Clearing the tags", DetagHold);
-            }
-
-            var nearest = NearestRemainingLoot(snapshot, out var distance);
-            if (!nearest.HasValue || distance > StealRange)
+            if (!string.IsNullOrEmpty(snapshot.ChannelKind))
             {
                 return MarketActionHint.None;
             }
 
-            var loot = nearest.Value;
-            if (loot.Id == "m_spirits" && !snapshot.VitrineOpen)
+            if (snapshot.PanelInRange)
             {
-                return new MarketActionHint(true, "Opening the vitrine", VitrineHold);
+                var panel = new Vector2((float)MarketData.Panel.I, (float)MarketData.Panel.J);
+                return new MarketActionHint(true, "Cutting the power", PowerHold, panel, "Hold E: disable CCTV");
             }
 
-            return new MarketActionHint(true, "Stealing the goods", 1.4f + loot.Value / 70f * 2.2f);
+            if (snapshot.DetaggerInRange)
+            {
+                var detagger = new Vector2((float)MarketData.Detagger.I, (float)MarketData.Detagger.J);
+                return new MarketActionHint(true, "Clearing the tags", DetagHold, detagger, "Hold E: de-tag");
+            }
+
+            var nearest = NearestRemainingLoot(snapshot, out var distance);
+            if (nearest.HasValue && distance <= StealRange)
+            {
+                var loot = nearest.Value;
+                var position = MarketLayout.ItemPosition(MarketData.Fixture(loot.Id));
+                if (loot.Id == "m_spirits" && !snapshot.VitrineOpen)
+                {
+                    return new MarketActionHint(true, "Opening the vitrine", VitrineHold, position, "Hold E: force the vitrine");
+                }
+
+                var prompt = "Hold E: steal " + loot.Label + " (" + loot.Value + ")";
+                return new MarketActionHint(true, "Stealing the goods", 1.4f + loot.Value / 70f * 2.2f, position, prompt);
+            }
+
+            if (snapshot.ExitInRange && !snapshot.ExitBlockedByTags)
+            {
+                var exit = new Vector2((float)MarketData.EasGate.I, (float)MarketData.EasGate.J);
+                return new MarketActionHint(true, "Leaving", 0f, exit, "Hold E: leave");
+            }
+
+            return MarketActionHint.None;
         }
 
         /// <summary>Fraction of the hold reached, clamped to 0 to 1.</summary>

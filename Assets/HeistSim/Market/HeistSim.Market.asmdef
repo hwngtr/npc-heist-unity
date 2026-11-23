@@ -3,6 +3,7 @@
     "rootNamespace": "HeistSim.Market",
     "references": [
         "HeistSim",
+        "HeistSim.Arena",
         "Unity.TextMeshPro",
         "UnityEngine.UI",
         "Unity.InputSystem"

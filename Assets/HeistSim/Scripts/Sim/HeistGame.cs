@@ -35,6 +35,23 @@ namespace HeistSim
         Sweep,
     }
 
+    /// <summary>Outcome of one action button attempt, reported so the HUD can explain a silent return.</summary>
+    public enum InteractOutcome
+    {
+        /// <summary>No attempt was made this tick, or the run is not accepting input.</summary>
+        None,
+        /// <summary>An interaction channel started.</summary>
+        Started,
+        /// <summary>The bag has no free slot for the nearby good.</summary>
+        BagFull,
+        /// <summary>The target is close enough but the view to it is blocked.</summary>
+        BlockedLineOfSight,
+        /// <summary>The power panel is close enough but the view to it is blocked.</summary>
+        PanelOutOfReach,
+        /// <summary>No interaction target is available from here.</summary>
+        NoTarget,
+    }
+
     /// <summary>Read only state record returned by the debug snapshot helper.</summary>
     public readonly struct HeistSnapshot
     {
@@ -62,7 +79,20 @@ namespace HeistSim
             bool camerasDisabled,
             bool vitrineOpen,
             int activeTags,
-            int easAlarmTicks)
+            int easAlarmTicks,
+            string channelKind,
+            float channelProgress,
+            float channelHold,
+            ChannelResult lastChannelResult,
+            int cameraSightings,
+            Vector2? lastSeenPos,
+            bool detectedNow,
+            bool firstDetectionEdge,
+            bool panelInRange,
+            bool detaggerInRange,
+            bool exitInRange,
+            bool exitBlockedByTags,
+            InteractOutcome lastInteraction)
         {
             Tick = tick;
             Player = player;
@@ -87,6 +117,19 @@ namespace HeistSim
             VitrineOpen = vitrineOpen;
             ActiveTags = activeTags;
             EasAlarmTicks = easAlarmTicks;
+            ChannelKind = channelKind;
+            ChannelProgress = channelProgress;
+            ChannelHold = channelHold;
+            LastChannelResult = lastChannelResult;
+            CameraSightings = cameraSightings;
+            LastSeenPos = lastSeenPos;
+            DetectedNow = detectedNow;
+            FirstDetectionEdge = firstDetectionEdge;
+            PanelInRange = panelInRange;
+            DetaggerInRange = detaggerInRange;
+            ExitInRange = exitInRange;
+            ExitBlockedByTags = exitBlockedByTags;
+            LastInteraction = lastInteraction;
         }
 
         /// <summary>Simulation tick number.</summary>
@@ -157,6 +200,68 @@ namespace HeistSim
 
         /// <summary>Remaining ticks of the EAS gate alarm warning.</summary>
         public int EasAlarmTicks { get; }
+
+        /// <summary>Kind of the active channel, or null when idle.</summary>
+        public string ChannelKind { get; }
+
+        /// <summary>Seconds accumulated by the active channel.</summary>
+        public float ChannelProgress { get; }
+
+        /// <summary>Seconds the active channel must hold to finish.</summary>
+        public float ChannelHold { get; }
+
+        /// <summary>Result of the most recent channel tick.</summary>
+        public ChannelResult LastChannelResult { get; }
+
+        /// <summary>Bit mask of CCTV rigs that see the thief, one bit per camera declaration index.</summary>
+        public int CameraSightings { get; }
+
+        /// <summary>Last position reported by a sensor, or null before the first sighting.</summary>
+        public Vector2? LastSeenPos { get; }
+
+        /// <summary>Whether any sensor sees the thief on this tick.</summary>
+        public bool DetectedNow { get; }
+
+        /// <summary>Whether visibility first went true on this tick.</summary>
+        public bool FirstDetectionEdge { get; }
+
+        /// <summary>Whether the CCTV panel is close enough and still live.</summary>
+        public bool PanelInRange { get; }
+
+        /// <summary>Whether the de-tagger is close enough to use.</summary>
+        public bool DetaggerInRange { get; }
+
+        /// <summary>Whether the thief stands inside the EAS gate radius.</summary>
+        public bool ExitInRange { get; }
+
+        /// <summary>Whether the exit is blocked because RF tags are still in the bag.</summary>
+        public bool ExitBlockedByTags { get; }
+
+        /// <summary>Outcome of the most recent action button attempt.</summary>
+        public InteractOutcome LastInteraction { get; }
+
+        /// <summary>Number of CCTV rigs that see the thief on this tick.</summary>
+        public int CameraSightingCount
+        {
+            get
+            {
+                var count = 0;
+                var bits = CameraSightings;
+                while (bits != 0)
+                {
+                    count += bits & 1;
+                    bits >>= 1;
+                }
+
+                return count;
+            }
+        }
+
+        /// <summary>Whether the CCTV rig at the given declaration index sees the thief.</summary>
+        public bool CameraSees(int index)
+        {
+            return index >= 0 && index < 32 && (CameraSightings & (1 << index)) != 0;
+        }
 
         /// <summary>Whether a radio responder is active.</summary>
         public bool HasBackup => BackupPhase != BackupPhase.None;
@@ -259,6 +364,10 @@ namespace HeistSim
         private float _hp;
         private int _staffAlert;
         private bool _visible;
+        private bool _wasVisible;
+        private bool _firstDetectionEdge;
+        private ChannelResult _lastChannelResult;
+        private InteractOutcome _lastInteraction;
         private GuardAction _guardAction;
         private Vector2? _lastSeenPos;
         private SoundWave _soundWave;
@@ -341,6 +450,10 @@ namespace HeistSim
             _hp = 100f;
             _staffAlert = 0;
             _visible = false;
+            _wasVisible = false;
+            _firstDetectionEdge = false;
+            _lastChannelResult = ChannelResult.None;
+            _lastInteraction = InteractOutcome.None;
             _lastSeenPos = null;
             _soundWave = default;
             _easAlarm = 0;
@@ -439,7 +552,40 @@ namespace HeistSim
                 _state.CamerasDisabled,
                 _state.VitrineOpen,
                 _taggedIds.Count,
-                _easAlarm);
+                _easAlarm,
+                _state.Channel?.Kind,
+                _state.Channel?.Progress ?? 0f,
+                _state.Channel?.Hold ?? 0f,
+                _lastChannelResult,
+                SightingBits(),
+                _lastSeenPos,
+                _visible,
+                _firstDetectionEdge,
+                Distance(_player, ToVector(MarketData.Panel.I, MarketData.Panel.J)) <= PanelRange && !_state.CamerasDisabled,
+                Distance(_player, ToVector(MarketData.Detagger.I, MarketData.Detagger.J)) <= DetaggerRange,
+                Distance(_player, ToVector(MarketData.EasGate.I, MarketData.EasGate.J)) <= EasGateRadius,
+                Distance(_player, ToVector(MarketData.EasGate.I, MarketData.EasGate.J)) <= EasGateRadius && _taggedIds.Count > 0,
+                _lastInteraction);
+        }
+
+        /// <summary>Builds the CCTV sighting mask from the persisted camera states.</summary>
+        private int SightingBits()
+        {
+            var bits = 0;
+            if (_state.CamerasDisabled)
+            {
+                return bits;
+            }
+
+            for (var i = 0; i < _cameras.Length && i < 31; i++)
+            {
+                if (_cameras[i].Sees)
+                {
+                    bits |= 1 << i;
+                }
+            }
+
+            return bits;
         }
 
         /// <summary>Advances the whole market simulation by one deterministic tick.</summary>
@@ -451,6 +597,8 @@ namespace HeistSim
             }
 
             var prof = _profile;
+            _lastInteraction = InteractOutcome.None;
+            _firstDetectionEdge = false;
             _tick += 1;
             var tick = _tick;
             _clock += dt;
@@ -552,6 +700,8 @@ namespace HeistSim
             var close = playerDistance <= prof.close_proximity;
             var guardSees = (inCone || close) && LineOfSight(_guard, _player, null);
             _visible = guardSees || cameraSpot || (_staffAlert > 0 && _staffAlert > StaffReportVisibleFloor);
+            _firstDetectionEdge = _visible && !_wasVisible;
+            _wasVisible = _visible;
 
             var motion = moving && InMotionZone(_player);
             var staffReport = _staffAlert > StaffReportVisibleFloor && !_state.CamerasDisabled;
@@ -619,6 +769,7 @@ namespace HeistSim
 
             var active = _state.Channel;
             var channelResult = _state.TickChannel(dt, moving || _visible || _state.Tier >= 5);
+            _lastChannelResult = channelResult;
             if (channelResult == ChannelResult.Done && active != null)
             {
                 ApplyChannel(active);
@@ -667,7 +818,7 @@ namespace HeistSim
 
             if (input.Action)
             {
-                TryInteract();
+                _lastInteraction = TryInteract();
             }
         }
 
@@ -946,75 +1097,80 @@ namespace HeistSim
             EmitSound((float)MarketData.Detagger.I, (float)MarketData.Detagger.J, 2.0f);
         }
 
-        private void TryInteract()
+        private InteractOutcome TryInteract()
         {
             if (_outcome != HeistOutcome.None || _state.Channel != null)
             {
-                return;
+                return InteractOutcome.None;
             }
 
             var panel = ToVector(MarketData.Panel.I, MarketData.Panel.J);
-            if (Distance(_player, panel) <= PanelRange
-                && !_state.CamerasDisabled
-                && LineOfSight(_player, panel, null))
+            if (Distance(_player, panel) <= PanelRange && !_state.CamerasDisabled)
             {
+                if (!LineOfSight(_player, panel, null))
+                {
+                    return InteractOutcome.PanelOutOfReach;
+                }
+
                 _state.StartChannel("power", null, PowerHold);
-                return;
+                return InteractOutcome.Started;
             }
 
             var detagger = ToVector(MarketData.Detagger.I, MarketData.Detagger.J);
-            if (Distance(_player, detagger) <= DetaggerRange && LineOfSight(_player, detagger, null))
+            if (Distance(_player, detagger) <= DetaggerRange)
             {
+                if (!LineOfSight(_player, detagger, null))
+                {
+                    return InteractOutcome.BlockedLineOfSight;
+                }
+
                 if (_taggedIds.Count > 0)
                 {
                     _state.StartChannel("detag", null, DetagHold);
-                }
-                else
-                {
-                    DetagAll();
+                    return InteractOutcome.Started;
                 }
 
-                return;
+                DetagAll();
+                return InteractOutcome.NoTarget;
             }
 
             var near = NearestLoot();
             if (!near.Found)
             {
-                return;
+                return InteractOutcome.NoTarget;
             }
 
             if (near.Distance <= StealRange)
             {
                 if (!LineOfSight(_player, near.Position, near.Id))
                 {
-                    return;
+                    return InteractOutcome.BlockedLineOfSight;
                 }
 
                 if (near.Id == "m_spirits" && !_state.VitrineOpen)
                 {
                     _state.StartChannel("vitrine", null, VitrineHold);
-                }
-                else
-                {
-                    StartStealChannel(near.Loot);
+                    return InteractOutcome.Started;
                 }
 
-                return;
+                return StartStealChannel(near.Loot) ? InteractOutcome.Started : InteractOutcome.BagFull;
             }
 
             _targetI = near.Position.x;
             _targetJ = near.Position.y;
             _pendingStealId = near.Id;
+            return InteractOutcome.None;
         }
 
-        private void StartStealChannel(LootEntry loot)
+        private bool StartStealChannel(LootEntry loot)
         {
             if (!_state.CanCarry)
             {
-                return;
+                return false;
             }
 
             _state.StartChannel("steal", loot.Id, StealHold(loot));
+            return true;
         }
 
         private static float StealHold(LootEntry loot)

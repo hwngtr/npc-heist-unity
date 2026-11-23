@@ -1,11 +1,16 @@
+using System;
 using System.Collections.Generic;
+using HeistSim.Market.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace HeistSim.Market
 {
-    /// <summary>Screen space HUD for the market shift: heat, loot, objectives, guard, backup, action and outcome.</summary>
+    /// <summary>
+    /// Screen space HUD for the market shift. Reads HeistSnapshot only and never mutates gameplay.
+    /// The whole widget tree is built at runtime, so the scene needs no new serialized bindings.
+    /// </summary>
     public sealed class MarketHUD : MonoBehaviour
     {
         private static readonly string[] ObjectiveLabels =
@@ -18,13 +23,16 @@ namespace HeistSim.Market
         };
 
         private const int FeedCapacity = 5;
-        private const float RefusalSeconds = 0.9f;
-        private const float DetectionFlashSeconds = 0.25f;
+        private const float FeedSeconds = 14f;
+        private const float FeedFadeSeconds = 2.5f;
+        private const float RefusalSeconds = 1.1f;
+        private const float DetectionFlashSeconds = 0.35f;
+        private const string RootName = "Redesign Root";
 
-        /// <summary>Heat tier name and current tier readout.</summary>
+        /// <summary>Heat tier name, shown beside the six notch spine.</summary>
         public TMP_Text heatText;
 
-        /// <summary>Fill bar that follows the heat value.</summary>
+        /// <summary>Back of the heat spine, kept for the established binding.</summary>
         public RectTransform heatFill;
 
         /// <summary>Stolen value against the quota.</summary>
@@ -33,34 +41,34 @@ namespace HeistSim.Market
         /// <summary>Bag slots used.</summary>
         public TMP_Text bagText;
 
-        /// <summary>One line per objective, with a done marker.</summary>
+        /// <summary>One body line per objective.</summary>
         public TMP_Text[] objectiveLines = new TMP_Text[0];
 
-        /// <summary>Guard state with the controller badge.</summary>
+        /// <summary>Guard state in the top right glance card.</summary>
         public TMP_Text guardText;
 
         /// <summary>Staff radio backup status.</summary>
         public TMP_Text backupText;
 
-        /// <summary>Timed action progress line, hidden when idle.</summary>
+        /// <summary>Real channel progress label above the Sun bar.</summary>
         public TMP_Text actionText;
 
         /// <summary>Outcome banner for busted or escaped.</summary>
         public TMP_Text bannerText;
 
-        /// <summary>Control hint along the bottom of the view.</summary>
+        /// <summary>Bottom right control hint.</summary>
         public TMP_Text hintText;
 
-        /// <summary>Current department name for the player tile, shown as one line in the HUD.</summary>
+        /// <summary>Current department name, with the Zone prefix the scene tests require.</summary>
         public TMP_Text zoneText;
 
-        /// <summary>World anchored prompt panel, positioned from a screen point by the runner.</summary>
+        /// <summary>Bottom center prompt card, shown only for an in range target.</summary>
         public RectTransform promptRect;
 
-        /// <summary>Prompt label beside the E badge.</summary>
+        /// <summary>Short prompt line beside the Sun E badge.</summary>
         public TMP_Text promptText;
 
-        /// <summary>One line refusal message shown after a real interaction failure.</summary>
+        /// <summary>Short lived refusal line in CoralInk above the prompt.</summary>
         public TMP_Text refusalText;
 
         /// <summary>Fill of the real channel progress bar.</summary>
@@ -78,35 +86,63 @@ namespace HeistSim.Market
         /// <summary>Coloured pip beside the guard readout.</summary>
         public Image glancePip;
 
-        /// <summary>Full screen coral overlay for the first detection tick.</summary>
+        /// <summary>Translucent full screen detection pulse.</summary>
         public Image detectionFlash;
 
-        /// <summary>Four edge strips shown while the guard chases or attacks.</summary>
+        /// <summary>Four pulsing edge strips shown while the guard chases.</summary>
         public Image[] chaseVignette = new Image[0];
 
-        /// <summary>Badge labels of the compact feed, newest first.</summary>
+        /// <summary>Badges of the compact feed, newest first.</summary>
         public TMP_Text[] feedBadges = new TMP_Text[0];
 
         /// <summary>Message lines of the compact feed, newest first.</summary>
         public TMP_Text[] feedMessages = new TMP_Text[0];
 
-        private readonly List<KeyValuePair<string, string>> _feed = new();
-        private bool _built;
+        private readonly struct FeedEntry
+        {
+            public FeedEntry(string badge, string message, float life)
+            {
+                Badge = badge;
+                Message = message;
+                Life = life;
+            }
+
+            public string Badge { get; }
+
+            public string Message { get; }
+
+            public float Life { get; }
+        }
+
+        private readonly List<FeedEntry> _feed = new();
+
+        private RectTransform _redesignRoot;
+        private TMP_Text _headline;
+        private TMP_Text _controllerBadge;
+        private TMP_Text _zoomText;
+        private Image _refusalBack;
+        private GameObject _bannerRoot;
+        private Image[] _objectiveMarks = new Image[0];
+
         private float _refusalTimer;
         private float _flashTimer;
+        private float _pulse;
+        private bool _chasing;
 
         private void Awake()
         {
             var font = Resources.Load<TMP_FontAsset>("MarketSans");
-            if (heatText == null)
+            var existing = transform.Find(RootName) as RectTransform;
+            if (existing == null)
             {
+                RemoveLegacyChildren();
                 CreateWidgets(font);
             }
-            else if (NeedsFeedbackWidgets())
+            else
             {
-                var panel = heatText.transform.parent as RectTransform;
-                CreateFeedbackWidgets(font, panel != null ? panel : (RectTransform)transform);
-                _built = true;
+                _redesignRoot = existing;
+                RebindRuntimeReferences();
+                LayoutPanels();
             }
 
             var canvas = GetComponent<Canvas>();
@@ -119,96 +155,76 @@ namespace HeistSim.Market
         /// <summary>Builds the full widget tree once and returns false when it already exists.</summary>
         public bool CreateWidgets(TMP_FontAsset font)
         {
-            if (_built || heatText != null)
+            if (_redesignRoot != null || transform.Find(RootName) != null)
             {
                 return false;
             }
 
-            var panelColor = new Color(MarketSceneSpec.Card.r, MarketSceneSpec.Card.g, MarketSceneSpec.Card.b, 0.9f);
-            var ink = MarketSceneSpec.InkBlue2;
+            font ??= Resources.Load<TMP_FontAsset>("MarketSans");
 
-            var panel = CreateImage("Panel", transform, panelColor, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(12f, -8f), new Vector2(392f, 460f));
-            panel.rectTransform.pivot = new Vector2(0f, 1f);
+            var root = HudWidgets.Rect(RootName, transform);
+            root.anchorMin = Vector2.zero;
+            root.anchorMax = Vector2.one;
+            root.pivot = new Vector2(0.5f, 0.5f);
+            root.offsetMin = Vector2.zero;
+            root.offsetMax = Vector2.zero;
+            _redesignRoot = root;
 
-            CreateText("Title", panel.rectTransform, font, "Frischemarkt", 26f, MarketSceneSpec.Black, TextAlignmentOptions.TopLeft, new Vector2(16f, -12f), new Vector2(340f, 32f));
-            heatText = CreateText("Heat", panel.rectTransform, font, "Heat: Calm", 20f, MarketSceneSpec.Black, TextAlignmentOptions.TopLeft, new Vector2(16f, -48f), new Vector2(340f, 26f));
+            CreateAtmosphere(root);
+            CreateStatusCard(font, root);
+            CreateGlanceCard(font, root);
+            CreateFeed(font, root);
+            CreatePrompt(font, root);
+            CreateChannel(font, root);
+            CreateRefusal(font, root);
+            CreateHints(font, root);
+            CreateBanner(font, root);
 
-            var barBack = CreateImage("Heat Bar", panel.rectTransform, new Color(ink.r, ink.g, ink.b, 0.25f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -78f), new Vector2(340f, 10f));
-            var fill = CreateImage("Heat Fill", barBack.rectTransform, MarketSceneSpec.Coral, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 0.5f), Vector2.zero, Vector2.zero);
-            fill.rectTransform.offsetMin = Vector2.zero;
-            fill.rectTransform.offsetMax = Vector2.zero;
-            heatFill = fill.rectTransform;
-            heatFill.anchorMax = new Vector2(0.12f, 1f);
-
-            lootText = CreateText("Loot", panel.rectTransform, font, "Loot: 0 / 190", 20f, MarketSceneSpec.InkBlue, TextAlignmentOptions.TopLeft, new Vector2(16f, -106f), new Vector2(340f, 26f));
-            bagText = CreateText("Bag", panel.rectTransform, font, "Bag: 0 / 6", 20f, MarketSceneSpec.InkBlue, TextAlignmentOptions.TopLeft, new Vector2(16f, -134f), new Vector2(340f, 26f));
-            CreateText("Objectives Header", panel.rectTransform, font, "Objectives", 18f, MarketSceneSpec.CoralInk, TextAlignmentOptions.TopLeft, new Vector2(16f, -166f), new Vector2(340f, 22f));
-
-            objectiveLines = new TMP_Text[ObjectiveLabels.Length];
-            for (var i = 0; i < ObjectiveLabels.Length; i++)
-            {
-                objectiveLines[i] = CreateText(
-                    "Objective " + (i + 1),
-                    panel.rectTransform,
-                    font,
-                    "[ ] " + ObjectiveLabels[i],
-                    18f,
-                    MarketSceneSpec.Black,
-                    TextAlignmentOptions.TopLeft,
-                    new Vector2(16f, -190f - i * 24f),
-                    new Vector2(340f, 22f));
-            }
-
-            guardText = CreateText("Guard", panel.rectTransform, font, "Guard: patrol  [FSM]", 19f, MarketSceneSpec.Black, TextAlignmentOptions.TopLeft, new Vector2(16f, -316f), new Vector2(310f, 24f));
-
-            backupText = CreateText("Backup", panel.rectTransform, font, "Backup: quiet", 18f, ink, TextAlignmentOptions.TopLeft, new Vector2(16f, -342f), new Vector2(360f, 22f));
-            actionText = CreateText("Action", panel.rectTransform, font, string.Empty, 18f, MarketSceneSpec.CoralInk, TextAlignmentOptions.TopLeft, new Vector2(16f, -368f), new Vector2(360f, 22f));
-            actionText.gameObject.SetActive(false);
-
-            bannerText = CreateText("Banner", transform, font, "BUSTED", 64f, MarketSceneSpec.Coral, TextAlignmentOptions.Center, new Vector2(0f, -96f), new Vector2(900f, 96f));
-            var bannerRect = bannerText.rectTransform;
-            bannerRect.anchorMin = new Vector2(0.5f, 1f);
-            bannerRect.anchorMax = new Vector2(0.5f, 1f);
-            bannerRect.pivot = new Vector2(0.5f, 1f);
-            bannerRect.anchoredPosition = new Vector2(0f, -96f);
-            bannerText.fontStyle = FontStyles.Bold;
-            bannerText.gameObject.SetActive(false);
-
-            CreateFeedbackWidgets(font, panel.rectTransform);
-
-            hintText = CreateText("Hint", transform, font, "Click the Game view first | WASD or arrows sneak | hold E act | C crouch | Shift run | R new shift | Tab guard", 16f, ink, TextAlignmentOptions.BottomLeft, new Vector2(24f, 20f), new Vector2(900f, 24f));
-            var hintRect = hintText.rectTransform;
-            hintRect.anchorMin = new Vector2(0f, 0f);
-            hintRect.anchorMax = new Vector2(0f, 0f);
-            hintRect.pivot = new Vector2(0f, 0f);
-            hintRect.anchoredPosition = new Vector2(24f, 20f);
-
-            zoneText = CreateText("Zone", transform, font, "Zone: " + MarketData.Rooms[0].Name, 18f, ink, TextAlignmentOptions.BottomLeft, new Vector2(24f, 48f), new Vector2(900f, 24f));
-            var zoneRect = zoneText.rectTransform;
-            zoneRect.anchorMin = new Vector2(0f, 0f);
-            zoneRect.anchorMax = new Vector2(0f, 0f);
-            zoneRect.pivot = new Vector2(0f, 0f);
-            zoneRect.anchoredPosition = new Vector2(24f, 48f);
-
-            _built = true;
+            LayoutPanels();
             return true;
         }
 
-        /// <summary>Updates every HUD line from the snapshot and the live channel.</summary>
+        /// <summary>Reapplies every normalized anchor and pivot. Safe to call on resize or re-init.</summary>
+        public void LayoutPanels()
+        {
+            if (_redesignRoot == null)
+            {
+                return;
+            }
+
+            PlaceNamed("Status Card", HudPanel.Status);
+            PlaceNamed("Glance Card", HudPanel.Glance);
+            PlaceNamed("Feed Card", HudPanel.Feed);
+            PlaceNamed("Prompt", HudPanel.Prompt);
+            PlaceNamed("Refusal Back", HudPanel.Refusal);
+            PlaceNamed("Channel Bar", HudPanel.Channel);
+            PlaceNamed("Hint Bar", HudPanel.Hint);
+            PlaceNamed("Zoom Bar", HudPanel.Zoom);
+
+            if (detectionFlash != null)
+            {
+                HudLayout.Place(detectionFlash.rectTransform, HudPanel.Flash);
+            }
+
+            if (chaseVignette.Length == 4)
+            {
+                HudLayout.Place(chaseVignette[0].rectTransform, HudPanel.VignetteTop);
+                HudLayout.Place(chaseVignette[1].rectTransform, HudPanel.VignetteBottom);
+                HudLayout.Place(chaseVignette[2].rectTransform, HudPanel.VignetteLeft);
+                HudLayout.Place(chaseVignette[3].rectTransform, HudPanel.VignetteRight);
+            }
+        }
+
+        /// <summary>Updates every HUD widget from the snapshot and the probed action hint.</summary>
         public void Refresh(in HeistSnapshot snapshot, in MarketActionHint hint, float actionProgress)
         {
-            if (!_built && heatText == null)
+            if (_redesignRoot == null)
             {
                 return;
             }
 
             var tier = Mathf.Clamp(snapshot.Tier, 0, HeistState.Tiers.Length - 1);
-            heatText.text = "Heat: " + HeistState.Tiers[tier].Label;
-            if (heatFill != null)
-            {
-                heatFill.anchorMax = new Vector2(Mathf.Clamp01(snapshot.Heat), 1f);
-            }
-
+            heatText.text = HeistState.Tiers[tier].Label;
             for (var i = 0; i < heatNotches.Length; i++)
             {
                 var notch = heatNotches[i];
@@ -217,126 +233,98 @@ namespace HeistSim.Market
                     continue;
                 }
 
-                var tint = HeatNotchColor(i);
-                notch.color = i <= tier
-                    ? tint
-                    : new Color(tint.r, tint.g, tint.b, 0.25f);
+                var ink = HeatNotchColor(i);
+                var alpha = i <= tier ? 1f : 0.24f;
+                notch.color = new Color(ink.r, ink.g, ink.b, alpha);
             }
 
             lootText.text = "Loot: " + Mathf.FloorToInt(snapshot.StolenValue) + " / " + MarketData.Quota;
             bagText.text = "Bag: " + snapshot.BagCount + " / " + MarketData.BagCapacity;
-
-            if (zoneText != null)
-            {
-                zoneText.text = "Zone: " + ZoneName(snapshot.Player);
-            }
+            zoneText.text = "Zone: " + ZoneName(snapshot.Player);
 
             if (snapshot.Objectives != null)
             {
                 for (var i = 0; i < objectiveLines.Length && i < snapshot.Objectives.Count; i++)
                 {
                     var objective = snapshot.Objectives[i];
-                    objectiveLines[i].text = (objective.Done ? "[x] " : "[ ] ") + ObjectiveLabel(objective.Id);
+                    objectiveLines[i].text = ObjectiveLabel(objective.Id);
+                    if (i < _objectiveMarks.Length && _objectiveMarks[i] != null)
+                    {
+                        _objectiveMarks[i].color = objective.Done ? MarketSceneSpec.Teal : MarketSceneSpec.Card;
+                    }
                 }
             }
 
-            guardText.text = "Guard: " + snapshot.GuardState + "  [" + (snapshot.Arch == GuardArchitecture.Fsm ? "FSM" : "BT") + "]";
+            guardText.text = StateLabel(snapshot.GuardState);
+            _controllerBadge.text = snapshot.Arch == GuardArchitecture.Fsm ? "FSM" : "BT";
             backupText.text = "Backup: " + BackupLabel(snapshot.BackupPhase);
+            tagText.text = "RF tags: " + snapshot.ActiveTags;
+            tagText.color = snapshot.ActiveTags > 0 ? MarketSceneSpec.Coral : MarketSceneSpec.InkBlue2;
 
-            if (tagText != null)
-            {
-                tagText.text = "RF tags: " + snapshot.ActiveTags;
-                tagText.color = snapshot.ActiveTags > 0 ? MarketSceneSpec.Coral : MarketSceneSpec.InkBlue2;
-            }
+            var glancing = snapshot.DetectedNow
+                || snapshot.GuardState == "investigate"
+                || snapshot.GuardState == "search"
+                || snapshot.GuardState == "chase"
+                || snapshot.GuardState == "attack";
+            glancePip.gameObject.SetActive(glancing);
+            var pipInk = GuardVisionFan.TintFor(snapshot.GuardState);
+            glancePip.color = new Color(pipInk.r, pipInk.g, pipInk.b, 0.95f);
 
-            if (glancePip != null)
+            _chasing = snapshot.GuardState == "chase" || snapshot.GuardState == "attack";
+            foreach (var strip in chaseVignette)
             {
-                var state = snapshot.GuardState;
-                var glancing = snapshot.DetectedNow
-                    || state == "investigate"
-                    || state == "search"
-                    || state == "chase"
-                    || state == "attack";
-                glancePip.gameObject.SetActive(glancing);
-                var pipTint = GuardVisionFan.TintFor(state);
-                glancePip.color = new Color(pipTint.r, pipTint.g, pipTint.b, 0.95f);
-            }
-
-            var alarmed = snapshot.GuardState == "chase" || snapshot.GuardState == "attack";
-            for (var i = 0; i < chaseVignette.Length; i++)
-            {
-                if (chaseVignette[i] != null && chaseVignette[i].gameObject.activeSelf != alarmed)
+                if (strip != null && strip.gameObject.activeSelf != _chasing)
                 {
-                    chaseVignette[i].gameObject.SetActive(alarmed);
+                    strip.gameObject.SetActive(_chasing);
                 }
             }
 
-            if (!string.IsNullOrEmpty(snapshot.ChannelKind) && snapshot.ChannelHold > 0f)
+            var channelActive = !string.IsNullOrEmpty(snapshot.ChannelKind) && snapshot.ChannelHold > 0f;
+            actionBarRoot.SetActive(channelActive);
+            if (channelActive)
             {
                 var progress = Mathf.Clamp01(snapshot.ChannelProgress / snapshot.ChannelHold);
-                actionText.gameObject.SetActive(true);
-                actionText.text = ChannelVerb(snapshot.ChannelKind) + " " + Mathf.RoundToInt(progress * 100f) + "% · hold still";
-                if (actionBarRoot != null)
-                {
-                    actionBarRoot.SetActive(true);
-                }
+                actionText.text = ChannelVerb(snapshot.ChannelKind) + " " + Mathf.RoundToInt(progress * 100f) + "%";
+                actionFill.anchorMax = new Vector2(Mathf.Max(0.02f, progress), 1f);
+            }
 
-                if (actionFill != null)
-                {
-                    actionFill.anchorMax = new Vector2(Mathf.Max(0.02f, progress), 1f);
-                }
+            if (hint.Found && !string.IsNullOrEmpty(hint.Prompt))
+            {
+                promptText.text = ShortPrompt(hint.Prompt);
+                promptRect.gameObject.SetActive(true);
             }
             else
             {
-                actionText.gameObject.SetActive(false);
-                if (actionBarRoot != null)
-                {
-                    actionBarRoot.SetActive(false);
-                }
+                HidePrompt();
             }
 
+            _bannerRoot.SetActive(snapshot.Outcome != HeistOutcome.None);
+            _headline.gameObject.SetActive(snapshot.Outcome == HeistOutcome.None);
             if (snapshot.Outcome == HeistOutcome.Busted)
             {
-                bannerText.gameObject.SetActive(true);
                 bannerText.color = MarketSceneSpec.Coral;
                 bannerText.text = "BUSTED\nR for a new shift";
             }
             else if (snapshot.Outcome == HeistOutcome.Escaped)
             {
-                bannerText.gameObject.SetActive(true);
                 bannerText.color = MarketSceneSpec.Teal;
                 bannerText.text = "ESCAPED\nShift complete, R to run again";
             }
-            else
-            {
-                bannerText.gameObject.SetActive(false);
-            }
+
+            // actionProgress is accepted for the established runner signature; the real bar
+            // reads ChannelProgress and ChannelHold from the snapshot only.
         }
 
-        /// <summary>Places the in-range prompt at a screen point from Camera.WorldToScreenPoint.</summary>
+        /// <summary>Places the in-range prompt in its fixed bottom center slot.</summary>
         public void ShowPrompt(Vector2 screenPoint, string label)
         {
-            if (promptRect == null || string.IsNullOrEmpty(label))
+            if (string.IsNullOrEmpty(label))
             {
                 HidePrompt();
                 return;
             }
 
-            var canvas = GetComponent<Canvas>();
-            Camera worldCamera = null;
-            if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
-            {
-                worldCamera = canvas.worldCamera;
-            }
-
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)transform, screenPoint, worldCamera, out var local))
-            {
-                HidePrompt();
-                return;
-            }
-
-            promptRect.anchoredPosition = local;
-            promptText.text = label;
+            promptText.text = ShortPrompt(label);
             promptRect.gameObject.SetActive(true);
         }
 
@@ -349,7 +337,7 @@ namespace HeistSim.Market
             }
         }
 
-        /// <summary>Starts the short lived refusal flash for a real interaction failure.</summary>
+        /// <summary>Starts the short lived CoralInk refusal flash for a real interaction failure.</summary>
         public void ShowRefusal(string reason)
         {
             if (refusalText == null || string.IsNullOrEmpty(reason))
@@ -358,7 +346,9 @@ namespace HeistSim.Market
             }
 
             refusalText.text = reason;
+            refusalText.color = MarketSceneSpec.CoralInk;
             refusalText.gameObject.SetActive(true);
+            _refusalBack.gameObject.SetActive(true);
             _refusalTimer = RefusalSeconds;
         }
 
@@ -370,7 +360,7 @@ namespace HeistSim.Market
                 _feed.RemoveAt(_feed.Count - 1);
             }
 
-            _feed.Insert(0, new KeyValuePair<string, string>(badge, message));
+            _feed.Insert(0, new FeedEntry(badge ?? string.Empty, message ?? string.Empty, FeedSeconds));
             RefreshFeed();
         }
 
@@ -381,7 +371,31 @@ namespace HeistSim.Market
             RefreshFeed();
         }
 
-        /// <summary>Starts the first detection flash.</summary>
+        /// <summary>Ages feed entries so the list decays instead of accumulating forever.</summary>
+        public void TickFeed(float seconds)
+        {
+            if (seconds <= 0f || _feed.Count == 0)
+            {
+                return;
+            }
+
+            for (var i = _feed.Count - 1; i >= 0; i--)
+            {
+                var entry = _feed[i];
+                var life = entry.Life - seconds;
+                if (life <= 0f)
+                {
+                    _feed.RemoveAt(i);
+                    continue;
+                }
+
+                _feed[i] = new FeedEntry(entry.Badge, entry.Message, life);
+            }
+
+            RefreshFeed();
+        }
+
+        /// <summary>Starts the brief translucent detection pulse.</summary>
         public void FlashDetection()
         {
             if (detectionFlash == null)
@@ -390,32 +404,390 @@ namespace HeistSim.Market
             }
 
             _flashTimer = DetectionFlashSeconds;
+            detectionFlash.color = HudWidgets.DangerColor(0.14f);
             detectionFlash.gameObject.SetActive(true);
         }
 
         private void Update()
         {
+            var dt = Time.deltaTime;
+            _pulse += dt * 6f;
+            var wave = 0.5f + 0.5f * Mathf.Sin(_pulse);
+
             if (_flashTimer > 0f)
             {
-                _flashTimer = Mathf.Max(0f, _flashTimer - Time.deltaTime);
-                var alpha = 0.55f * (_flashTimer / DetectionFlashSeconds);
-                detectionFlash.color = new Color(MarketSceneSpec.Coral.r, MarketSceneSpec.Coral.g, MarketSceneSpec.Coral.b, alpha);
+                _flashTimer = Mathf.Max(0f, _flashTimer - dt);
+                var remaining = _flashTimer / DetectionFlashSeconds;
+                var alpha = (0.10f + 0.14f * wave) * remaining;
+                detectionFlash.color = HudWidgets.DangerColor(alpha);
                 if (_flashTimer <= 0f)
                 {
                     detectionFlash.gameObject.SetActive(false);
                 }
             }
 
+            if (_chasing && chaseVignette.Length == 4)
+            {
+                chaseVignette[0].color = HudWidgets.DangerColor(0.10f + 0.08f * wave);
+                chaseVignette[1].color = HudWidgets.DangerColor(0.10f + 0.08f * wave);
+                chaseVignette[2].color = HudWidgets.ShadowColor(0.12f + 0.10f * (1f - wave));
+                chaseVignette[3].color = HudWidgets.ShadowColor(0.12f + 0.10f * (1f - wave));
+            }
+
             if (_refusalTimer > 0f)
             {
-                _refusalTimer = Mathf.Max(0f, _refusalTimer - Time.deltaTime);
-                var alpha = Mathf.Clamp01(_refusalTimer / 0.25f);
-                refusalText.color = new Color(MarketSceneSpec.CoralInk.r, MarketSceneSpec.CoralInk.g, MarketSceneSpec.CoralInk.b, alpha);
+                _refusalTimer = Mathf.Max(0f, _refusalTimer - dt);
+                var alpha = Mathf.Clamp01(_refusalTimer / 0.3f) * (0.75f + 0.25f * wave);
+                var ink = MarketSceneSpec.CoralInk;
+                refusalText.color = new Color(ink.r, ink.g, ink.b, alpha);
+                var back = HudWidgets.CardColor();
+                _refusalBack.color = new Color(back.r, back.g, back.b, HudWidgets.PanelAlpha * alpha);
                 if (_refusalTimer <= 0f)
                 {
                     refusalText.gameObject.SetActive(false);
+                    _refusalBack.gameObject.SetActive(false);
                 }
             }
+
+            TickFeed(dt);
+        }
+
+        private void CreateAtmosphere(Transform root)
+        {
+            detectionFlash = HudWidgets.Shape("Detection Flash", root, HudWidgets.DangerColor(0f),
+                Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            detectionFlash.gameObject.SetActive(false);
+
+            var names = new[] { "Vignette Top", "Vignette Bottom", "Vignette Left", "Vignette Right" };
+            chaseVignette = new Image[names.Length];
+            for (var i = 0; i < names.Length; i++)
+            {
+                var alpha = i < 2 ? HudWidgets.DangerColor(0.12f) : HudWidgets.ShadowColor(0.16f);
+                chaseVignette[i] = HudWidgets.Shape(names[i], root, alpha,
+                    Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, Vector2.zero);
+                chaseVignette[i].gameObject.SetActive(false);
+            }
+        }
+
+        private void CreateStatusCard(TMP_FontAsset font, Transform root)
+        {
+            var panel = HudWidgets.Card("Status Card", root, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
+            var panelRect = panel.rectTransform;
+            HudWidgets.Kicker("Status Kicker", panelRect, font, "Shift brief", new Vector2(16f, -12f), new Vector2(320f, 16f));
+            _headline = HudWidgets.Headline("Headline", panelRect, font, "Frischemarkt", new Vector2(16f, -30f), new Vector2(320f, 36f));
+
+            HudWidgets.Kicker("Heat Kicker", panelRect, font, "Heat", new Vector2(16f, -74f), new Vector2(120f, 16f));
+            heatText = HudWidgets.Body("Heat Tier", panelRect, font, HeistState.Tiers[0].Label, new Vector2(196f, -74f), new Vector2(148f, 20f));
+            heatText.alignment = TextAlignmentOptions.TopRight;
+
+            var spine = HudWidgets.Shape("Heat Spine Back", panelRect, new Color(MarketSceneSpec.InkBlue2.r, MarketSceneSpec.InkBlue2.g, MarketSceneSpec.InkBlue2.b, 0.25f),
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -98f), new Vector2(338f, 8f));
+            heatFill = spine.rectTransform;
+            heatNotches = new Image[HeistState.Tiers.Length];
+            for (var i = 0; i < heatNotches.Length; i++)
+            {
+                heatNotches[i] = HudWidgets.Shape("Heat Notch " + i, panelRect, HeatNotchColor(i),
+                    new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(16f + i * 56f, -98f), new Vector2(50f, 8f));
+            }
+
+            HudWidgets.Kicker("Loot Kicker", panelRect, font, "Loot / quota", new Vector2(16f, -124f), new Vector2(150f, 16f));
+            lootText = HudWidgets.Body("Loot", panelRect, font, "Loot: 0 / " + MarketData.Quota, new Vector2(166f, -122f), new Vector2(178f, 22f));
+            lootText.alignment = TextAlignmentOptions.TopRight;
+
+            HudWidgets.Kicker("Bag Kicker", panelRect, font, "Bag", new Vector2(16f, -156f), new Vector2(150f, 16f));
+            bagText = HudWidgets.Body("Bag", panelRect, font, "Bag: 0 / " + MarketData.BagCapacity, new Vector2(166f, -154f), new Vector2(178f, 22f));
+            bagText.alignment = TextAlignmentOptions.TopRight;
+
+            HudWidgets.Kicker("Objectives Kicker", panelRect, font, "Objectives", new Vector2(16f, -188f), new Vector2(320f, 16f));
+            objectiveLines = new TMP_Text[ObjectiveLabels.Length];
+            _objectiveMarks = new Image[ObjectiveLabels.Length];
+            for (var i = 0; i < ObjectiveLabels.Length; i++)
+            {
+                var top = -212f - i * 30f;
+                HudWidgets.Shape("Objective Mark Back " + (i + 1), panelRect, MarketSceneSpec.InkBlue2,
+                    new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(16f, top), new Vector2(16f, 16f));
+                _objectiveMarks[i] = HudWidgets.Shape("Objective Mark " + (i + 1), panelRect, MarketSceneSpec.Card,
+                    new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(19f, top - 3f), new Vector2(10f, 10f));
+                objectiveLines[i] = HudWidgets.Body("Objective " + (i + 1), panelRect, font, ObjectiveLabels[i],
+                    new Vector2(40f, top - 1f), new Vector2(304f, 22f));
+            }
+
+            HudWidgets.Kicker("Radio Kicker", panelRect, font, "Radio", new Vector2(16f, -376f), new Vector2(150f, 16f));
+            backupText = HudWidgets.Micro("Backup", panelRect, font, "Backup: quiet", new Vector2(150f, -375f), new Vector2(194f, 20f));
+            backupText.alignment = TextAlignmentOptions.TopRight;
+
+            HudWidgets.Kicker("Tags Kicker", panelRect, font, "RF tags", new Vector2(16f, -408f), new Vector2(150f, 16f));
+            tagText = HudWidgets.Micro("Tags", panelRect, font, "RF tags: 0", new Vector2(150f, -407f), new Vector2(194f, 20f));
+            tagText.alignment = TextAlignmentOptions.TopRight;
+        }
+
+        private void CreateGlanceCard(TMP_FontAsset font, Transform root)
+        {
+            var panel = HudWidgets.Card("Glance Card", root, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
+            var panelRect = panel.rectTransform;
+            HudWidgets.Kicker("Glance Kicker", panelRect, font, "Guard glance", new Vector2(16f, -12f), new Vector2(288f, 16f));
+            guardText = HudWidgets.Body("Guard", panelRect, font, "Patrol", new Vector2(16f, -36f), new Vector2(200f, 24f));
+
+            HudWidgets.Shape("Controller Badge Back", panelRect, MarketSceneSpec.InkBlue2,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(250f, -34f), new Vector2(54f, 20f));
+            _controllerBadge = HudWidgets.Text("Controller Badge Label", panelRect, font, "FSM", HudWidgets.KickerSize,
+                MarketSceneSpec.Card, TextAlignmentOptions.Center, new Vector2(250f, -34f), new Vector2(54f, 20f),
+                HudWidgets.KickerTracking, true, true);
+
+            glancePip = HudWidgets.Shape("Glance Pip", panelRect, MarketSceneSpec.Teal,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(224f, -38f), new Vector2(12f, 12f));
+            glancePip.gameObject.SetActive(false);
+
+            HudWidgets.Shape("Glance Rule", panelRect, new Color(MarketSceneSpec.InkBlue2.r, MarketSceneSpec.InkBlue2.g, MarketSceneSpec.InkBlue2.b, 0.35f),
+                new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f), new Vector2(16f, -68f), new Vector2(-32f, 2f));
+            HudWidgets.Kicker("Zone Kicker", panelRect, font, "Department", new Vector2(16f, -84f), new Vector2(288f, 16f));
+            zoneText = HudWidgets.Micro("Zone", panelRect, font, "Zone: " + MarketData.Rooms[0].Name, new Vector2(16f, -106f), new Vector2(288f, 20f));
+        }
+
+        private void CreateFeed(TMP_FontAsset font, Transform root)
+        {
+            var panel = HudWidgets.Card("Feed Card", root, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
+            var panelRect = panel.rectTransform;
+            HudWidgets.Kicker("Feed Kicker", panelRect, font, "Activity feed", new Vector2(12f, -10f), new Vector2(300f, 16f));
+            feedBadges = new TMP_Text[FeedCapacity];
+            feedMessages = new TMP_Text[FeedCapacity];
+            for (var i = 0; i < FeedCapacity; i++)
+            {
+                var top = -34f - i * 24f;
+                feedBadges[i] = HudWidgets.Kicker("Feed Badge " + i, panelRect, font, string.Empty, new Vector2(12f, top), new Vector2(72f, 18f));
+                feedBadges[i].color = MarketSceneSpec.CoralInk;
+                feedMessages[i] = HudWidgets.Micro("Feed Line " + i, panelRect, font, string.Empty, new Vector2(88f, top), new Vector2(282f, 18f));
+            }
+        }
+
+        private void CreatePrompt(TMP_FontAsset font, Transform root)
+        {
+            var panel = HudWidgets.Card("Prompt", root, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
+            promptRect = panel.rectTransform;
+            var badge = HudWidgets.Shape("Prompt Badge", panel.rectTransform, MarketSceneSpec.Sun,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -11f), new Vector2(30f, 30f));
+            HudWidgets.Text("Prompt Key", badge.rectTransform, font, "E", 20f, MarketSceneSpec.Black,
+                TextAlignmentOptions.Center, Vector2.zero, new Vector2(30f, 30f), 0f, false, true);
+            var keyRect = badge.rectTransform.GetChild(0) as RectTransform;
+            if (keyRect != null)
+            {
+                keyRect.anchorMin = Vector2.zero;
+                keyRect.anchorMax = Vector2.one;
+                keyRect.pivot = new Vector2(0.5f, 0.5f);
+                keyRect.anchoredPosition = Vector2.zero;
+                keyRect.sizeDelta = Vector2.zero;
+            }
+
+            promptText = HudWidgets.Text("Prompt Label", panel.rectTransform, font, string.Empty, HudWidgets.BodySize,
+                MarketSceneSpec.InkBlue, TextAlignmentOptions.MidlineLeft, new Vector2(50f, -13f), new Vector2(378f, 26f));
+        }
+
+        private void CreateChannel(TMP_FontAsset font, Transform root)
+        {
+            var bar = HudWidgets.Shape("Channel Bar", root,
+                new Color(MarketSceneSpec.InkBlue2.r, MarketSceneSpec.InkBlue2.g, MarketSceneSpec.InkBlue2.b, 0.28f),
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, Vector2.zero);
+            actionBarRoot = bar.gameObject;
+            var fill = HudWidgets.Shape("Channel Fill", bar.rectTransform, MarketSceneSpec.Sun,
+                Vector2.zero, new Vector2(0f, 1f), Vector2.zero, Vector2.zero, Vector2.zero);
+            fill.rectTransform.offsetMin = Vector2.zero;
+            fill.rectTransform.offsetMax = Vector2.zero;
+            actionFill = fill.rectTransform;
+            actionFill.anchorMax = new Vector2(0f, 1f);
+
+            actionText = HudWidgets.Micro("Action", bar.rectTransform, font, string.Empty, new Vector2(0f, 18f), new Vector2(440f, 18f));
+            actionBarRoot.SetActive(false);
+        }
+
+        private void CreateRefusal(TMP_FontAsset font, Transform root)
+        {
+            _refusalBack = HudWidgets.Shape("Refusal Back", root, HudWidgets.CardColor(),
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, Vector2.zero);
+            refusalText = HudWidgets.Text("Refusal", _refusalBack.rectTransform, font, string.Empty, HudWidgets.BodySize,
+                MarketSceneSpec.CoralInk, TextAlignmentOptions.Center, new Vector2(10f, -2f), new Vector2(740f, 26f),
+                0f, false, true);
+            refusalText.color = MarketSceneSpec.CoralInk;
+            _refusalBack.gameObject.SetActive(false);
+            refusalText.gameObject.SetActive(false);
+        }
+
+        private void CreateHints(TMP_FontAsset font, Transform root)
+        {
+            var hintBar = HudWidgets.Shape("Hint Bar", root, HudWidgets.CardColor(),
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, Vector2.zero);
+            hintText = HudWidgets.Micro("Hint", hintBar.rectTransform, font,
+                "Click Game view | WASD move | E act | C crouch | Shift run | R reset | Tab guard",
+                new Vector2(10f, -3f), new Vector2(450f, 20f));
+
+            var zoomBar = HudWidgets.Shape("Zoom Bar", root, HudWidgets.CardColor(),
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, Vector2.zero);
+            _zoomText = HudWidgets.Micro("Zoom Note", zoomBar.rectTransform, font,
+                "Wheel zoom 8 to 24 tiles", new Vector2(10f, -3f), new Vector2(450f, 20f));
+        }
+
+        private void CreateBanner(TMP_FontAsset font, Transform root)
+        {
+            _bannerRoot = HudWidgets.Shape("Outcome Banner", root, HudWidgets.CardColor(),
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, 90f), new Vector2(700f, 130f)).gameObject;
+            bannerText = HudWidgets.Text("Banner", _bannerRoot.transform, font, string.Empty, HudWidgets.HeadlineSize,
+                MarketSceneSpec.Coral, TextAlignmentOptions.Center, new Vector2(20f, -22f), new Vector2(660f, 96f),
+                0f, false, true);
+            _bannerRoot.SetActive(false);
+        }
+
+        private void RefreshFeed()
+        {
+            for (var i = 0; i < feedBadges.Length; i++)
+            {
+                if (i >= _feed.Count)
+                {
+                    feedBadges[i].text = string.Empty;
+                    feedMessages[i].text = string.Empty;
+                    continue;
+                }
+
+                var entry = _feed[i];
+                var alpha = Mathf.Clamp01(entry.Life / FeedFadeSeconds);
+                var badgeInk = BadgeColor(entry.Badge);
+                feedBadges[i].text = entry.Badge;
+                feedBadges[i].color = new Color(badgeInk.r, badgeInk.g, badgeInk.b, alpha);
+                feedMessages[i].text = entry.Message;
+                feedMessages[i].color = new Color(MarketSceneSpec.InkBlue.r, MarketSceneSpec.InkBlue.g, MarketSceneSpec.InkBlue.b, alpha);
+            }
+        }
+
+        private void RemoveLegacyChildren()
+        {
+            for (var i = transform.childCount - 1; i >= 0; i--)
+            {
+                var child = transform.GetChild(i).gameObject;
+                if (Application.isPlaying)
+                {
+                    Destroy(child);
+                }
+                else
+                {
+                    DestroyImmediate(child);
+                }
+            }
+        }
+
+        private void RebindRuntimeReferences()
+        {
+            var root = _redesignRoot;
+            _headline = FindText(root, "Headline");
+            _controllerBadge = FindText(root, "Controller Badge Label");
+            _zoomText = FindText(root, "Zoom Note");
+            _refusalBack = FindImage(root, "Refusal Back");
+            var banner = Find(root, "Outcome Banner");
+            _bannerRoot = banner != null ? banner.gameObject : null;
+
+            heatText = FindText(root, "Heat Tier");
+            heatFill = FindRect(root, "Heat Spine Back");
+            lootText = FindText(root, "Loot");
+            bagText = FindText(root, "Bag");
+            guardText = FindText(root, "Guard");
+            backupText = FindText(root, "Backup");
+            actionText = FindText(root, "Action");
+            bannerText = FindText(root, "Banner");
+            hintText = FindText(root, "Hint");
+            zoneText = FindText(root, "Zone");
+            promptRect = FindRect(root, "Prompt");
+            promptText = FindText(root, "Prompt Label");
+            refusalText = FindText(root, "Refusal");
+            tagText = FindText(root, "Tags");
+            glancePip = FindImage(root, "Glance Pip");
+            detectionFlash = FindImage(root, "Detection Flash");
+
+            var bar = Find(root, "Channel Bar");
+            actionBarRoot = bar != null ? bar.gameObject : null;
+            actionFill = FindRect(root, "Channel Fill");
+
+            heatNotches = new Image[HeistState.Tiers.Length];
+            for (var i = 0; i < heatNotches.Length; i++)
+            {
+                heatNotches[i] = FindImage(root, "Heat Notch " + i);
+            }
+
+            var stripNames = new[] { "Vignette Top", "Vignette Bottom", "Vignette Left", "Vignette Right" };
+            var strips = new Image[stripNames.Length];
+            for (var i = 0; i < stripNames.Length; i++)
+            {
+                strips[i] = FindImage(root, stripNames[i]);
+            }
+
+            chaseVignette = strips;
+
+            objectiveLines = new TMP_Text[ObjectiveLabels.Length];
+            _objectiveMarks = new Image[ObjectiveLabels.Length];
+            for (var i = 0; i < ObjectiveLabels.Length; i++)
+            {
+                objectiveLines[i] = FindText(root, "Objective " + (i + 1));
+                _objectiveMarks[i] = FindImage(root, "Objective Mark " + (i + 1));
+            }
+
+            feedBadges = new TMP_Text[FeedCapacity];
+            feedMessages = new TMP_Text[FeedCapacity];
+            for (var i = 0; i < FeedCapacity; i++)
+            {
+                feedBadges[i] = FindText(root, "Feed Badge " + i);
+                feedMessages[i] = FindText(root, "Feed Line " + i);
+            }
+        }
+
+        private void PlaceNamed(string name, HudPanel panel)
+        {
+            var found = Find(_redesignRoot, name);
+            if (found is RectTransform rect)
+            {
+                HudLayout.Place(rect, panel);
+            }
+        }
+
+        private static Transform Find(Transform root, string name)
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            if (root.name == name)
+            {
+                return root;
+            }
+
+            for (var i = 0; i < root.childCount; i++)
+            {
+                var found = Find(root.GetChild(i), name);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
+        }
+
+        private static TMP_Text FindText(Transform root, string name)
+        {
+            var found = Find(root, name);
+            return found != null ? found.GetComponent<TMP_Text>() : null;
+        }
+
+        private static Image FindImage(Transform root, string name)
+        {
+            var found = Find(root, name);
+            return found != null ? found.GetComponent<Image>() : null;
+        }
+
+        private static RectTransform FindRect(Transform root, string name)
+        {
+            var found = Find(root, name);
+            return found as RectTransform;
         }
 
         /// <summary>Maps a tile position to the department that owns it, clamping outside points into the floorplan.</summary>
@@ -463,6 +835,16 @@ namespace HeistSim.Market
             };
         }
 
+        private static string StateLabel(string state)
+        {
+            if (string.IsNullOrEmpty(state))
+            {
+                return "Patrol";
+            }
+
+            return char.ToUpperInvariant(state[0]) + state.Substring(1);
+        }
+
         private static string BackupLabel(BackupPhase phase)
         {
             return phase switch
@@ -497,223 +879,11 @@ namespace HeistSim.Market
             };
         }
 
-        private bool NeedsFeedbackWidgets()
+        private static string ShortPrompt(string prompt)
         {
-            return detectionFlash == null
-                || chaseVignette.Length == 0
-                || heatNotches.Length == 0
-                || glancePip == null
-                || tagText == null
-                || actionBarRoot == null
-                || promptRect == null
-                || refusalText == null
-                || feedBadges.Length == 0
-                || feedMessages.Length == 0;
-        }
-
-        private void CreateFeedbackWidgets(TMP_FontAsset font, RectTransform panel)
-        {
-            var ink = MarketSceneSpec.InkBlue2;
-
-            if (detectionFlash == null)
-            {
-                detectionFlash = CreateImage("Detection Flash", transform, new Color(MarketSceneSpec.Coral.r, MarketSceneSpec.Coral.g, MarketSceneSpec.Coral.b, 0f), Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-                detectionFlash.rectTransform.offsetMin = Vector2.zero;
-                detectionFlash.rectTransform.offsetMax = Vector2.zero;
-                detectionFlash.gameObject.SetActive(false);
-                detectionFlash.transform.SetAsFirstSibling();
-            }
-
-            if (chaseVignette.Length == 0)
-            {
-                CreateVignette();
-            }
-
-            if (heatNotches.Length == 0)
-            {
-                heatNotches = new Image[HeistState.Tiers.Length];
-                for (var i = 0; i < heatNotches.Length; i++)
-                {
-                    heatNotches[i] = CreateImage(
-                        "Heat Notch " + i,
-                        panel,
-                        HeatNotchColor(i),
-                        new Vector2(0f, 1f),
-                        new Vector2(0f, 1f),
-                        new Vector2(0f, 1f),
-                        new Vector2(16f + i * 24f, -90f),
-                        new Vector2(18f, 5f));
-                }
-            }
-
-            if (glancePip == null)
-            {
-                glancePip = CreateImage("Glance Pip", panel, MarketSceneSpec.Teal, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(338f, -314f), new Vector2(14f, 14f));
-                glancePip.gameObject.SetActive(false);
-            }
-
-            if (tagText == null)
-            {
-                tagText = CreateText("Tags", panel, font, "RF tags: 0", 18f, ink, TextAlignmentOptions.TopLeft, new Vector2(16f, -392f), new Vector2(360f, 22f));
-            }
-
-            if (actionBarRoot == null)
-            {
-                var actionBack = CreateImage("Action Bar", panel, new Color(ink.r, ink.g, ink.b, 0.25f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -418f), new Vector2(340f, 8f));
-                var actionBarFill = CreateImage("Action Fill", actionBack.rectTransform, MarketSceneSpec.Sun, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 0.5f), Vector2.zero, Vector2.zero);
-                actionBarFill.rectTransform.offsetMin = Vector2.zero;
-                actionBarFill.rectTransform.offsetMax = Vector2.zero;
-                actionFill = actionBarFill.rectTransform;
-                actionFill.anchorMax = new Vector2(0f, 1f);
-                actionBarRoot = actionBack.gameObject;
-                actionBarRoot.SetActive(false);
-            }
-
-            if (promptRect == null || promptText == null)
-            {
-                CreatePrompt(font);
-            }
-
-            if (refusalText == null)
-            {
-                CreateRefusal(font);
-            }
-
-            if (feedBadges.Length == 0 || feedMessages.Length == 0)
-            {
-                CreateFeed(font);
-            }
-        }
-
-        private void CreateVignette()
-        {
-            chaseVignette = new Image[4];
-            chaseVignette[0] = CreateImage("Vignette Top", transform, new Color(MarketSceneSpec.Coral.r, MarketSceneSpec.Coral.g, MarketSceneSpec.Coral.b, 0.2f), new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(0f, 84f));
-            chaseVignette[1] = CreateImage("Vignette Bottom", transform, new Color(MarketSceneSpec.Coral.r, MarketSceneSpec.Coral.g, MarketSceneSpec.Coral.b, 0.2f), new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(0f, 84f));
-            chaseVignette[2] = CreateImage("Vignette Left", transform, new Color(MarketSceneSpec.Coral.r, MarketSceneSpec.Coral.g, MarketSceneSpec.Coral.b, 0.2f), new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0f), Vector2.zero, new Vector2(84f, 0f));
-            chaseVignette[3] = CreateImage("Vignette Right", transform, new Color(MarketSceneSpec.Coral.r, MarketSceneSpec.Coral.g, MarketSceneSpec.Coral.b, 0.2f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0f), Vector2.zero, new Vector2(84f, 0f));
-            foreach (var strip in chaseVignette)
-            {
-                strip.gameObject.SetActive(false);
-            }
-        }
-
-        private void CreatePrompt(TMP_FontAsset font)
-        {
-            promptRect = CreateImage("Prompt", transform, new Color(MarketSceneSpec.Card.r, MarketSceneSpec.Card.g, MarketSceneSpec.Card.b, 0.94f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(420f, 42f)).rectTransform;
-            var badge = CreateImage("Prompt Badge", promptRect, MarketSceneSpec.Sun, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(8f, 0f), new Vector2(30f, 30f));
-            var badgeText = CreateText("Prompt Key", badge.rectTransform, font, "E", 20f, MarketSceneSpec.Black, TextAlignmentOptions.Center, Vector2.zero, new Vector2(30f, 30f));
-            badgeText.fontStyle = FontStyles.Bold;
-            badgeText.rectTransform.anchorMin = Vector2.zero;
-            badgeText.rectTransform.anchorMax = Vector2.one;
-            badgeText.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            badgeText.rectTransform.anchoredPosition = Vector2.zero;
-            promptText = CreateText("Prompt Label", promptRect, font, string.Empty, 18f, MarketSceneSpec.Black, TextAlignmentOptions.MidlineLeft, new Vector2(46f, 0f), new Vector2(364f, 36f));
-            promptText.rectTransform.anchorMin = new Vector2(0f, 0.5f);
-            promptText.rectTransform.anchorMax = new Vector2(0f, 0.5f);
-            promptText.rectTransform.pivot = new Vector2(0f, 0.5f);
-            promptRect.gameObject.SetActive(false);
-        }
-
-        private void CreateRefusal(TMP_FontAsset font)
-        {
-            refusalText = CreateText("Refusal", transform, font, string.Empty, 22f, MarketSceneSpec.CoralInk, TextAlignmentOptions.Center, Vector2.zero, new Vector2(800f, 30f));
-            var rect = refusalText.rectTransform;
-            rect.anchorMin = new Vector2(0.5f, 0f);
-            rect.anchorMax = new Vector2(0.5f, 0f);
-            rect.pivot = new Vector2(0.5f, 0f);
-            rect.anchoredPosition = new Vector2(0f, 84f);
-            refusalText.fontStyle = FontStyles.Bold;
-            refusalText.gameObject.SetActive(false);
-        }
-
-        private void CreateFeed(TMP_FontAsset font)
-        {
-            var feedPanel = CreateImage("Feed", transform, new Color(MarketSceneSpec.Card.r, MarketSceneSpec.Card.g, MarketSceneSpec.Card.b, 0.86f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-12f, 48f), new Vector2(400f, 150f));
-            feedBadges = new TMP_Text[FeedCapacity];
-            feedMessages = new TMP_Text[FeedCapacity];
-            for (var i = 0; i < FeedCapacity; i++)
-            {
-                feedBadges[i] = CreateText("Feed Badge " + i, feedPanel.rectTransform, font, string.Empty, 15f, MarketSceneSpec.CoralInk, TextAlignmentOptions.TopLeft, new Vector2(10f, -10f - i * 26f), new Vector2(66f, 22f));
-                feedMessages[i] = CreateText("Feed Line " + i, feedPanel.rectTransform, font, string.Empty, 16f, MarketSceneSpec.Black, TextAlignmentOptions.TopLeft, new Vector2(82f, -10f - i * 26f), new Vector2(306f, 22f));
-            }
-        }
-
-        private void RefreshFeed()
-        {
-            for (var i = 0; i < feedBadges.Length; i++)
-            {
-                if (i < _feed.Count)
-                {
-                    var entry = _feed[i];
-                    feedBadges[i].text = entry.Key;
-                    feedBadges[i].color = BadgeColor(entry.Key);
-                    feedMessages[i].text = entry.Value;
-                }
-                else
-                {
-                    feedBadges[i].text = string.Empty;
-                    feedMessages[i].text = string.Empty;
-                }
-            }
-        }
-
-        private static TMP_Text CreateText(
-            string name,
-            Transform parent,
-            TMP_FontAsset font,
-            string content,
-            float size,
-            Color color,
-            TextAlignmentOptions alignment,
-            Vector2 position,
-            Vector2 box)
-        {
-            var textObject = new GameObject(name, typeof(RectTransform));
-            textObject.transform.SetParent(parent, false);
-            var text = textObject.AddComponent<TextMeshProUGUI>();
-            if (font != null)
-            {
-                text.font = font;
-            }
-
-            text.text = content;
-            text.fontSize = size;
-            text.color = color;
-            text.alignment = alignment;
-            text.textWrappingMode = TextWrappingModes.NoWrap;
-            text.raycastTarget = false;
-            var rect = text.rectTransform;
-            rect.anchorMin = new Vector2(0f, 1f);
-            rect.anchorMax = new Vector2(0f, 1f);
-            rect.pivot = new Vector2(0f, 1f);
-            rect.anchoredPosition = position;
-            rect.sizeDelta = box;
-            return text;
-        }
-
-        private static Image CreateImage(
-            string name,
-            Transform parent,
-            Color color,
-            Vector2 anchorMin,
-            Vector2 anchorMax,
-            Vector2 pivot,
-            Vector2 position,
-            Vector2 size)
-        {
-            var imageObject = new GameObject(name, typeof(RectTransform));
-            imageObject.transform.SetParent(parent, false);
-            var image = imageObject.AddComponent<Image>();
-            image.color = color;
-            image.raycastTarget = false;
-            var rect = image.rectTransform;
-            rect.anchorMin = anchorMin;
-            rect.anchorMax = anchorMax;
-            rect.pivot = pivot;
-            rect.anchoredPosition = position;
-            rect.sizeDelta = size;
-            return image;
+            const string prefix = "Hold E: ";
+            var line = prompt.StartsWith(prefix, StringComparison.Ordinal) ? prompt.Substring(prefix.Length) : prompt;
+            return line.Length <= 44 ? line : line.Substring(0, 43) + "...";
         }
     }
 }

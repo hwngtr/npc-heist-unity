@@ -11,7 +11,7 @@ Lenses:
 - [x] Review D: prop detail gaps. Unity has more fixture parts than web (408 vs 324); real gaps are store shell, blank aisle signs, empty containers, checkout and back-room decor, entrance glow.
 
 Implementation workstreams, after synthesis:
-- [ ] Feedback worktree /home/hwngtr/Projects/npc-heist-unity-feedback, branch feat/feedback-signals. Owns MarketRunner.cs, MarketHUD.cs, GuardVisionFan.cs, HeistGame.cs snapshot additions, new feedback components and their tests. Must NOT commit the built scene.
-- [ ] Art worktree /home/hwngtr/Projects/npc-heist-unity-art, branch feat/market-detail. Owns FixtureShapeData.cs, DetailFactory.cs, MarketLevelBuilder.cs, MarketData fixture placement, new art data and their tests. This is the only worktree that rebuilds and commits Market.unity and the capture.
-- [ ] Merge feedback first, then art, verifying the combined gate and the final capture.
-- [ ] Recapture the final Market.png and show it to the user.
+- [x] Feedback worktree feat/feedback-signals, commit 7f859ee, gate 150 tests; own run confirmed 150. Owner verified.
+- [x] Art worktree feat/market-detail, commit e85ae44, gate 156 tests. The reviewer's panel tile (27,22) would have blocked the only r5 to r6 doorway; agent chose local (0.4,3.0) instead, panel approach 0.5 tiles, doorway preserved.
+- [x] Merged feedback then art into main with no conflicts. Combined gate: SUMMARY total=163 passed=163 failed=0 skipped=0, run by the owner.
+- [x] Recaptured final Market.png and shown to the user.

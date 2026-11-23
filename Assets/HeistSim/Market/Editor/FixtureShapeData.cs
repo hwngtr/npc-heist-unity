@@ -216,6 +216,14 @@ namespace HeistSim.Market.Editor
                 Tin(0.99f, 0.45f, 1.96f, 0.14f, 0.1f, InkRole.Coral),
                 Prod(1.5f, 0.36f, 1.52f, 0.42f, 0.4f, 0.38f, InkRole.Sun),
                 Tin(2.1f, 0.36f, 1.52f, 0.4f, 0.4f, InkRole.Coral),
+                // crown row: gable carton, can, capped bottle, cereal box and tin on the skyline
+                Prod(0.2f, 0.42f, 1.94f, 0.34f, 0.26f, 0.3f, InkRole.Paper),
+                Cone(0.2f, 0.42f, 2.24f, 0.34f, 0.12f, InkRole.Paper),
+                Tin(0.7f, 0.42f, 1.98f, 0.3f, 0.34f, InkRole.Coral),
+                Cone(1.3f, 0.42f, 1.92f, 0.26f, 0.3f, InkRole.Teal),
+                Tin(1.36f, 0.48f, 2.22f, 0.12f, 0.1f, InkRole.Coral),
+                Prod(1.8f, 0.42f, 1.94f, 0.34f, 0.26f, 0.32f, InkRole.Sun),
+                Tin(2.32f, 0.42f, 1.96f, 0.3f, 0.3f, InkRole.Sun),
             },
             // web/js/market.js line 45
             ["chilled-case"] = new[]
@@ -258,6 +266,13 @@ namespace HeistSim.Market.Editor
                 Prod(1.9f, 0.52f, 1.38f, 0.42f, 0.26f, 0.34f, InkRole.Sun),
                 Prod(0.4f, 0.62f, 1.38f, 0.36f, 0.2f, 0.3f, InkRole.Card),
                 Tin(1.1f, 0.62f, 1.38f, 0.34f, 0.28f, InkRole.Coral),
+                // top rail: gable milk, tub, cheese pack and a capped drink
+                Prod(0.2f, 0.5f, 1.78f, 0.4f, 0.26f, 0.28f, InkRole.Paper),
+                Cone(0.2f, 0.5f, 2.06f, 0.4f, 0.12f, InkRole.Paper),
+                Tin(0.8f, 0.5f, 1.78f, 0.36f, 0.3f, InkRole.Card),
+                Prod(1.4f, 0.5f, 1.78f, 0.4f, 0.26f, 0.28f, InkRole.Sun),
+                Tin(2.0f, 0.5f, 1.78f, 0.36f, 0.3f, InkRole.Coral),
+                Prod(0.5f, 0.62f, 1.78f, 0.34f, 0.2f, 0.3f, InkRole.Card),
             },
             // web/js/market.js line 82
             ["produce-island"] = new[]
@@ -289,6 +304,12 @@ namespace HeistSim.Market.Editor
                 // carrot tips poking out of the heap
                 Cone(0.6f, 0.2f, 1.1f, 0.16f, 0.3f, InkRole.Coral),
                 Cone(1.56f, 0.78f, 1.1f, 0.16f, 0.3f, InkRole.Coral),
+                // heaped top layer so every crate reads as full from the aisle
+                Ball(0.7f, 0.5f, 1.14f, 0.3f, InkRole.Sun),
+                Ball(1.5f, 0.5f, 1.14f, 0.3f, InkRole.Coral),
+                Ball(0.8f, 0.7f, 1.44f, 0.28f, InkRole.Teal),
+                Cone(1.4f, 0.6f, 1.1f, 0.16f, 0.28f, InkRole.Coral),
+                Ball(0.5f, 0.9f, 1.14f, 0.3f, InkRole.Sun),
             },
             // web/js/market.js line 106
             ["apple-crate"] = new[]
@@ -320,6 +341,11 @@ namespace HeistSim.Market.Editor
                 Ball(0.28f, 0.34f, 0.56f, 0.24f, InkRole.Coral),
                 Ball(0.56f, 0.34f, 0.56f, 0.24f, InkRole.Coral),
                 Ball(0.4f, 0.4f, 0.52f, 0.2f, InkRole.Sun),
+                // extra apples fill the back half of the crate
+                Ball(0.64f, 0.08f, 0.56f, 0.22f, InkRole.Coral),
+                Ball(0.64f, 0.34f, 0.56f, 0.22f, InkRole.Coral),
+                Ball(0.08f, 0.42f, 0.56f, 0.22f, InkRole.Coral),
+                Ball(0.6f, 0.42f, 0.52f, 0.2f, InkRole.Sun),
             },
             // web/js/market.js line 139
             ["bakery-rack"] = new[]
@@ -366,6 +392,8 @@ namespace HeistSim.Market.Editor
                 Tin(1.5f, 0.75f, 1.0f, 0.34f, 0.3f, InkRole.Coral),
                 Cone(1.5f, 0.75f, 1.3f, 0.34f, 0.14f, InkRole.Coral),
                 Tin(1.59f, 0.84f, 1.4f, 0.12f, 0.1f, InkRole.Black),
+                Prod(1.4f, 0.75f, 0.16f, 0.4f, 0.3f, 0.38f, InkRole.Card),
+                Tin(1.0f, 0.85f, 1.0f, 0.34f, 0.3f, InkRole.Sun),
             },
             // web/js/market.js line 180
             ["liquor-cabinet"] = new[]
@@ -428,6 +456,9 @@ namespace HeistSim.Market.Editor
                 Prod(0.72f, 0.2f, 1.08f, 0.42f, 0.36f, 0.4f, InkRole.Sun),
                 Tin(0.3f, 0.66f, 1.08f, 0.34f, 0.4f, InkRole.Coral),
                 Tin(0.78f, 0.66f, 1.08f, 0.34f, 0.4f, InkRole.Teal),
+                // third tier reaches above the pallet and reads as a stocked stack
+                Prod(0.1f, 0.2f, 1.48f, 0.38f, 0.3f, 0.34f, InkRole.Card),
+                Tin(0.86f, 0.2f, 1.48f, 0.32f, 0.32f, InkRole.Sun),
             },
             // web/js/market.js line 262
             ["shopping-cart"] = new[]
@@ -473,6 +504,11 @@ namespace HeistSim.Market.Editor
                 Ball(0.6f, 1.18f, 0.66f, 0.28f, InkRole.Coral),
                 Prod(0.3f, 0.6f, 0.86f, 0.34f, 0.26f, 0.3f, InkRole.Card),
                 Tin(0.66f, 0.6f, 0.86f, 0.28f, 0.3f, InkRole.Sun),
+                // upper basket layer: carton, can, bread tip and a piece of fruit
+                Prod(0.3f, 0.4f, 0.86f, 0.3f, 0.26f, 0.36f, InkRole.Card),
+                Tin(0.66f, 0.4f, 0.86f, 0.28f, 0.32f, InkRole.Sun),
+                Cone(0.4f, 1.2f, 0.88f, 0.24f, 0.24f, InkRole.Sun),
+                Ball(0.28f, 1.3f, 0.66f, 0.26f, InkRole.Teal),
             },
             // web/js/market.js line 546
             ["hand-basket"] = new[]
@@ -556,6 +592,10 @@ namespace HeistSim.Market.Editor
                 B(0.5f, 0.04f, 1.44f, 0.5f, 0.86f, 0.07f, InkRole.Paper),
                 B(1f, 0.04f, 1.44f, 0.5f, 0.86f, 0.07f, InkRole.Coral),
                 B(1.5f, 0.04f, 1.44f, 0.5f, 0.86f, 0.07f, InkRole.Paper),
+                // wrapped counter goods: gable pack, can and a tray
+                Prod(0.3f, 0.5f, 1.34f, 0.36f, 0.26f, 0.3f, InkRole.Coral),
+                Cone(0.3f, 0.5f, 1.64f, 0.36f, 0.14f, InkRole.Coral),
+                Tin(1.1f, 0.5f, 1.34f, 0.34f, 0.3f, InkRole.Sun),
             },
             // web/js/market.js line 656
             ["self-checkout"] = new[]
@@ -601,6 +641,11 @@ namespace HeistSim.Market.Editor
                 Prod(0.2f, 0.2f, 1.06f, 0.4f, 0.3f, 0.34f, InkRole.Paper),
                 Tin(0.72f, 0.2f, 1.06f, 0.36f, 0.32f, InkRole.Card),
                 Prod(1.16f, 0.2f, 1.06f, 0.36f, 0.3f, 0.34f, InkRole.Sun),
+                // heaped frozen goods over the glass lid
+                Prod(0.4f, 0.34f, 1.06f, 0.36f, 0.28f, 0.3f, InkRole.Coral),
+                Tin(0.9f, 0.34f, 1.06f, 0.32f, 0.3f, InkRole.Paper),
+                Prod(1.2f, 0.62f, 1.06f, 0.32f, 0.26f, 0.32f, InkRole.Sun),
+                Cone(0.5f, 0.6f, 1.4f, 0.28f, 0.2f, InkRole.Teal),
             },
             // web/js/market.js line 714
             ["beverage-shelf"] = new[]
@@ -622,6 +667,12 @@ namespace HeistSim.Market.Editor
                 B(0.2f, 0.3f, 1.26f, 0.4f, 0.34f, 0.42f, InkRole.Sun),
                 B(0.8f, 0.3f, 1.26f, 0.4f, 0.34f, 0.42f, InkRole.Coral),
                 B(1.4f, 0.3f, 1.26f, 0.4f, 0.34f, 0.42f, InkRole.Teal),
+                // top tier carton, can with cap, box and bottle
+                Prod(0.2f, 0.44f, 1.84f, 0.36f, 0.3f, 0.36f, InkRole.Sun),
+                Tin(0.7f, 0.44f, 1.84f, 0.32f, 0.34f, InkRole.Coral),
+                Cone(0.7f, 0.44f, 2.18f, 0.32f, 0.12f, InkRole.Coral),
+                Prod(1.2f, 0.44f, 1.84f, 0.34f, 0.3f, 0.32f, InkRole.Card),
+                Tin(1.7f, 0.44f, 1.84f, 0.32f, 0.32f, InkRole.Teal),
             },
             // web/js/market.js line 741
             ["bistro-counter"] = new[]
@@ -634,6 +685,9 @@ namespace HeistSim.Market.Editor
                 B(0.2f, 0.2f, 1.44f, 1.4f, 0.12f, 0.22f, InkRole.Sun),
                 C(0.4f, 0.7f, 0f, 0.2f, 0.62f, InkRole.Card),
                 C(1.3f, 0.7f, 0f, 0.2f, 0.62f, InkRole.Card),
+                // counter snacks: carton and capped can
+                Prod(0.6f, 0.5f, 1.42f, 0.36f, 0.26f, 0.3f, InkRole.Sun),
+                Tin(1.3f, 0.5f, 1.42f, 0.32f, 0.3f, InkRole.Coral),
             },
             // web/js/market.js line 759
             ["deli-counter"] = new[]
@@ -644,6 +698,8 @@ namespace HeistSim.Market.Editor
                 B(0.18f, 0.18f, 1.42f, 0.38f, 0.4f, 0.28f, InkRole.Coral),
                 B(0.66f, 0.18f, 1.42f, 0.38f, 0.4f, 0.28f, InkRole.Sun),
                 B(1.14f, 0.18f, 1.42f, 0.38f, 0.4f, 0.28f, InkRole.Key),
+                Prod(0.3f, 0.5f, 1.7f, 0.38f, 0.26f, 0.3f, InkRole.Coral),
+                Ball(0.9f, 0.5f, 1.7f, 0.28f, InkRole.Sun),
             },
             // web/js/market.js line 773
             ["wine-rack"] = new[]
@@ -671,6 +727,11 @@ namespace HeistSim.Market.Editor
                 B(0.18f, 0.2f, 0.42f, 0.44f, 0.3f, 0.34f, InkRole.Card),
                 B(1f, 0.2f, 0.42f, 0.44f, 0.3f, 0.34f, InkRole.Card),
                 B(1.76f, 0.2f, 0.42f, 0.44f, 0.3f, 0.34f, InkRole.Card),
+                // frozen cartons and tubs on the camera facing lower shelf
+                Prod(0.4f, 0.42f, 0.8f, 0.4f, 0.24f, 0.34f, InkRole.Card),
+                Tin(1.3f, 0.42f, 0.8f, 0.36f, 0.32f, InkRole.Sun),
+                Prod(1.98f, 0.42f, 0.8f, 0.34f, 0.24f, 0.32f, InkRole.Coral),
+                Cone(0.6f, 0.48f, 1.18f, 0.3f, 0.2f, InkRole.Paper),
             },
             // web/js/market.js line 808
             ["pallet-cage"] = new[]
@@ -771,39 +832,46 @@ namespace HeistSim.Market.Editor
         /// </summary>
         public static readonly IReadOnlyDictionary<string, DetailPart[]> Actors = new Dictionary<string, DetailPart[]>(StringComparer.Ordinal)
         {
-            // player role: the web teal thief bot, enlarged to read at gameplay zoom. Guard and staff parts stay untouched.
+            // Player keeps teal, a wide sun cap and a floor ring. A black base disc and a backing plate give it a hard rim at gameplay zoom.
             ["player"] = new[]
             {
-                // sun floor ring, rendered as a Disc and left hollow by the black base above it
-                new DetailPart(DetailPrimitive.Disc, new Vector3(0f, 0.03f, 0f), new Vector3(1.5f, 0.02f, 1.5f), InkRole.Sun, false),
-                B(-0.5f, -0.5f, 0.04f, 1f, 1f, 0.04f, InkRole.Black), // centred base disc under the ring centre
-                Cyl(0f, 0f, 0.06f, 0.34f, 1.1f, InkRole.Teal), // bright teal body, radius 0.34 and height 1.1
+                new DetailPart(DetailPrimitive.Disc, new Vector3(0f, 0.02f, 0f), new Vector3(1.7f, 0.02f, 1.7f), InkRole.Black, false), // hard base disc
+                new DetailPart(DetailPrimitive.Disc, new Vector3(0f, 0.03f, 0f), new Vector3(1.5f, 0.02f, 1.5f), InkRole.Sun, false), // sun floor ring left hollow by the base
+                B(-0.46f, -0.14f, 0.04f, 0.92f, 0.1f, 1.16f, InkRole.Black), // rim backing plate behind the body
+                Cyl(0f, 0f, 0.06f, 0.34f, 1.1f, InkRole.Teal), // teal body
                 B(-0.28f, -0.34f, 0.55f, 0.56f, 0.1f, 0.46f, InkRole.Black), // black face plate on the front
                 D(-0.12f, -0.4f, 0.82f, 2.4f, InkRole.Paper), // robot.js line 83 left paper eye
                 D(0.12f, -0.4f, 0.82f, 2.4f, InkRole.Paper), // robot.js line 83 right paper eye
                 B(-0.22f, 0.3f, 0.62f, 0.44f, 0.3f, 0.42f, InkRole.Coral), // coral loot bag on the back
-                Cyl(0f, 0f, 1.06f, 0.52f, 0.06f, InkRole.Sun), // sun cap brim
-                Cyl(0f, 0f, 1.12f, 0.34f, 0.14f, InkRole.Sun), // sun cap crown
+                Cyl(0f, 0f, 1.06f, 0.62f, 0.06f, InkRole.Sun), // wide sun cap brim
+                Cyl(0f, 0f, 1.12f, 0.36f, 0.14f, InkRole.Sun), // sun cap crown
             },
-            // guard role: bot parts from robot.js, mark from market-app.js as cited.
+            // Guard reads as midnight blue with a coral cap and an enlarged sun badge on the chest and cap.
             ["guard"] = new[]
             {
-                B(0f, 0f, 0.02f, 1f, 1f, 0.04f, InkRole.Black), // polish round base disc
-                S(0f, 0f, 0.52f, 0.52f, InkRole.Black), // robot.js line 34 black ball
-                D(-0.13f, -0.46f, 0.58f, 2.4f, InkRole.Paper), // robot.js line 83 left paper eye
-                D(0.13f, -0.46f, 0.58f, 2.4f, InkRole.Paper), // robot.js line 83 right paper eye
-                C(0f, 0f, 1.12f, 0.38f, 0.08f, InkRole.Key), // market-app.js line 1046 detective blue cap
-                new DetailPart(DetailPrimitive.Disc, new Vector3(0f, 1.17f, 0f), new Vector3(0.38f, 0.02f, 0.38f), InkRole.Sun, false), // enlarged gold badge
+                new DetailPart(DetailPrimitive.Disc, new Vector3(0f, 0.02f, 0f), new Vector3(1.5f, 0.02f, 1.5f), InkRole.Black, false), // hard base disc
+                B(-0.5f, -0.14f, 0.04f, 1f, 0.1f, 1.28f, InkRole.Black), // rim backing plate behind the body
+                Cyl(0f, 0f, 0.06f, 0.4f, 1.0f, InkRole.Key), // midnight blue body
+                S(0f, 0f, 1.14f, 0.42f, InkRole.Black), // robot.js line 34 black head
+                D(-0.13f, -0.44f, 1.2f, 2.4f, InkRole.Paper), // robot.js line 83 left paper eye
+                D(0.13f, -0.44f, 1.2f, 2.4f, InkRole.Paper), // robot.js line 83 right paper eye
+                B(-0.18f, -0.44f, 0.98f, 0.36f, 0.06f, 0.3f, InkRole.Sun), // enlarged chest badge
+                Cyl(0f, 0f, 1.5f, 0.46f, 0.08f, InkRole.Coral), // coral cap brim
+                Cyl(0f, 0f, 1.58f, 0.3f, 0.12f, InkRole.Coral), // coral cap crown
+                new DetailPart(DetailPrimitive.Disc, new Vector3(0f, 1.62f, 0f), new Vector3(0.5f, 0.02f, 0.5f), InkRole.Sun, false), // cap badge disc
             },
-            // staff role: bot parts from robot.js, mark from market-app.js as cited.
+            // Staff reads yellow with a sun cap and a coral chest mark.
             ["staff"] = new[]
             {
-                B(0f, 0f, 0.02f, 1f, 1f, 0.04f, InkRole.Black), // polish round base disc
-                S(0f, 0f, 0.52f, 0.52f, InkRole.Black), // robot.js line 34 black ball
-                D(-0.13f, -0.46f, 0.58f, 2.4f, InkRole.Paper), // robot.js line 83 left paper eye
-                D(0.13f, -0.46f, 0.58f, 2.4f, InkRole.Paper), // robot.js line 83 right paper eye
-                C(0f, 0f, 1.12f, 0.38f, 0.08f, InkRole.Sun), // market-app.js line 1046 staff sun cap
-                new DetailPart(DetailPrimitive.Disc, new Vector3(0f, 1.17f, 0f), new Vector3(0.38f, 0.02f, 0.38f), InkRole.Coral, false), // enlarged coral S mark
+                new DetailPart(DetailPrimitive.Disc, new Vector3(0f, 0.02f, 0f), new Vector3(1.5f, 0.02f, 1.5f), InkRole.Black, false), // hard base disc
+                B(-0.5f, -0.14f, 0.04f, 1f, 0.1f, 1.28f, InkRole.Black), // rim backing plate behind the body
+                Cyl(0f, 0f, 0.06f, 0.4f, 1.0f, InkRole.Sun), // yellow body
+                S(0f, 0f, 1.14f, 0.42f, InkRole.Black), // robot.js line 34 black head
+                D(-0.13f, -0.44f, 1.2f, 2.4f, InkRole.Paper), // robot.js line 83 left paper eye
+                D(0.13f, -0.44f, 1.2f, 2.4f, InkRole.Paper), // robot.js line 83 right paper eye
+                B(-0.16f, -0.44f, 0.98f, 0.32f, 0.06f, 0.26f, InkRole.Coral), // coral S mark
+                Cyl(0f, 0f, 1.5f, 0.46f, 0.08f, InkRole.Sun), // sun cap brim
+                Cyl(0f, 0f, 1.58f, 0.3f, 0.12f, InkRole.Sun), // sun cap crown
             },
         };
 

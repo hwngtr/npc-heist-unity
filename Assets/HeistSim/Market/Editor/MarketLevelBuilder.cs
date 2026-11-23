@@ -241,9 +241,12 @@ namespace HeistSim.Market.Editor
             BuildBulbs(walls, materials);
 
             BuildFixtures(content);
+            BuildAisleSigns(content, materials);
             BuildCheckoutMarkings(content, materials);
+            BuildCheckoutCanopy(content, materials);
             BuildBackRoomProps(content, materials);
             BuildEntranceGlow(content, materials);
+            BuildEasSilhouette(content, materials);
             BuildCameras(content, materials, coneMesh, out var cones);
             BuildLoot(content, materials);
             BuildDevices(content, materials);
@@ -262,8 +265,8 @@ namespace HeistSim.Market.Editor
         }
 
         /// <summary>
-        /// Paints one thin panel per room cell and a flat department pattern over it. Checkout and stockroom
-        /// keep a Paper base so the InkBlue2 pattern reads as a half tone instead of an off palette third ink.
+        /// Paints one thin panel per room cell and a signature floor pattern over it. Paper and Card alternate
+        /// as quiet bases; the strong department colour lives in the pattern so the space stays riso calm.
         /// </summary>
         private static void BuildRoomFloors(Transform content, Dictionary<string, Material> materials)
         {
@@ -271,8 +274,8 @@ namespace HeistSim.Market.Editor
             var patterns = NewGroup(content, "Room Patterns");
             foreach (var room in MarketData.Rooms)
             {
-                var muted = room.Type == "checkout" || room.Type == "stockroom";
-                var key = muted || (room.AtI + room.AtJ) % 2 == 0 ? "wall" : "floor";
+                var signature = WorldArtSpec.For(room.Id);
+                var key = (room.AtI + room.AtJ) % 2 == 0 ? "wall" : "floor";
                 var centre = new Vector3(
                     room.OriginI + MarketData.RoomTiles * 0.5f,
                     0.01f,
@@ -283,89 +286,68 @@ namespace HeistSim.Market.Editor
                     centre,
                     new Vector3(MarketData.RoomTiles - 0.02f, 0.02f, MarketData.RoomTiles - 0.02f),
                     materials[key]);
-                BuildFloorPattern(patterns, room, materials);
+                BuildFloorPattern(patterns, room, signature, materials);
             }
         }
 
         /// <summary>
-        /// Adds the per room floor style from web/js/market.js lines 888-917: tiles, planks, concrete or checker.
-        /// Every overlay uses a material made from the ArenaSpec palette.
+        /// Adds the signature floor style from web/js/market.js lines 888 to 917: tiles, planks, concrete or
+        /// checker. Floor and accent inks come from WorldArtSpec, so every department reads differently.
         /// </summary>
-        private static void BuildFloorPattern(Transform parent, RoomRect room, Dictionary<string, Material> materials)
+        private static void BuildFloorPattern(Transform parent, RoomRect room, RoomSignature signature, Dictionary<string, Material> materials)
         {
             var ox = room.OriginI;
             var oz = room.OriginJ;
             const float y = 0.028f;
             const float thickness = 0.012f;
-            switch (room.Type)
+            var floor = materials[WorldArtSpec.MaterialKey(signature.Floor)];
+            var accent = materials[WorldArtSpec.MaterialKey(signature.Accent)];
+            var group = NewGroup(parent, "Floor Pattern " + room.Id);
+            switch (signature.Pattern)
             {
-                case "entrance":
-                case "dairy":
-                case "wet":
-                case "staff":
+                case FloorPattern.Tiles:
                 {
-                    var ink = room.Type == "entrance" ? "teal"
-                        : room.Type == "dairy" ? "inkBlue2"
-                        : room.Type == "wet" ? "inkBlue" : "zoneMuted";
                     for (var i = 0; i < MarketData.RoomTiles; i += 2)
                     {
                         for (var j = 0; j < MarketData.RoomTiles; j += 2)
                         {
-                            FloorTile(parent, "Tile " + room.Id + " " + i + "-" + j, ox + i + 0.5f, oz + j + 0.5f, 0.86f, 0.86f, materials[ink], y, thickness);
+                            FloorTile(group, "Tile " + i + "-" + j, ox + i + 0.5f, oz + j + 0.5f, 0.86f, 0.86f, floor, y, thickness);
+                            FloorTile(group, "Tile Dot " + i + "-" + j, ox + i + 0.5f, oz + j + 0.5f, 0.2f, 0.2f, accent, y + thickness, thickness);
                         }
                     }
 
                     break;
                 }
-                case "breakfast":
-                case "floral":
-                case "backshop":
+                case FloorPattern.Planks:
                 {
                     for (var j = 0; j < MarketData.RoomTiles; j += 2)
                     {
-                        FloorTile(parent, "Plank " + room.Id + " " + j, ox + 4.5f, oz + j + 0.55f, 8.6f, 0.5f, materials["sun"], y, thickness);
+                        FloorTile(group, "Plank " + j, ox + 4.5f, oz + j + 0.55f, 8.6f, 0.5f, floor, y, thickness);
+                        FloorTile(group, "Plank Seam " + j, ox + 4.5f, oz + j + 1.05f, 8.6f, 0.08f, accent, y + thickness, thickness);
                     }
 
                     break;
                 }
-                case "beverages":
-                case "wine":
+                case FloorPattern.Concrete:
                 {
-                    FloorTile(parent, "Concrete " + room.Id, ox + 4.5f, oz + 4.5f, 8.8f, 8.8f, materials["zoneMuted"], y, thickness);
+                    FloorTile(group, "Slab", ox + 4.5f, oz + 4.5f, 8.8f, 8.8f, floor, y, thickness);
                     for (var k = 1; k < MarketData.RoomTiles; k += 3)
                     {
-                        FloorTile(parent, "Concrete Seam " + room.Id + " " + k, ox + 4.5f, oz + k + 0.5f, 8.8f, 0.06f, materials["coralInk"], y + thickness, thickness);
+                        FloorTile(group, "Slab Seam " + k, ox + 4.5f, oz + k + 0.5f, 8.8f, 0.08f, accent, y + thickness, thickness);
+                        FloorTile(group, "Slab Cross " + k, ox + k + 0.5f, oz + 4.5f, 0.08f, 8.8f, accent, y + thickness, thickness);
                     }
 
                     break;
                 }
-                case "frozen":
-                {
-                    for (var j = 0; j < MarketData.RoomTiles; j += 3)
-                    {
-                        FloorTile(parent, "Chill Tile " + room.Id + " " + j, ox + 4.5f, oz + j + 0.5f, 8.6f, 0.7f, materials["teal"], y, thickness);
-                    }
-
-                    break;
-                }
-                case "checkout":
+                case FloorPattern.Checker:
                 {
                     for (var i = 0; i < MarketData.RoomTiles; i++)
                     {
                         for (var j = 0; j < MarketData.RoomTiles; j++)
                         {
-                            var ink = (i + j) % 2 == 0 ? "sun" : "zoneMuted";
-                            FloorTile(parent, "Checker " + room.Id + " " + i + "-" + j, ox + i + 0.5f, oz + j + 0.5f, 0.98f, 0.98f, materials[ink], y, thickness);
+                            var ink = (i + j) % 2 == 0 ? floor : accent;
+                            FloorTile(group, "Check " + i + "-" + j, ox + i + 0.5f, oz + j + 0.5f, 0.98f, 0.98f, ink, y, thickness);
                         }
-                    }
-
-                    break;
-                }
-                case "stockroom":
-                {
-                    for (var j = 0; j < MarketData.RoomTiles; j += 2)
-                    {
-                        FloorTile(parent, "Stock Stripe " + room.Id + " " + j, ox + 4.5f, oz + j + 0.5f, 8.6f, 0.8f, materials["zoneMuted"], y, thickness);
                     }
 
                     break;
@@ -379,33 +361,28 @@ namespace HeistSim.Market.Editor
             Box(parent, name, new Vector3(x, y, z), new Vector3(width, thickness, depth), material);
         }
 
-        /// <summary>Paints the back wall per department with the wall ink from web/js/market.js lines 888-917.</summary>
+        /// <summary>
+        /// Paints one back wall wash in each department's signature ink, with a thin accent rule above it.
+        /// The wash and the rule together give twelve departments a distinct colour band across the wall.
+        /// </summary>
         private static void BuildWallWashes(Transform walls, Dictionary<string, Material> materials)
         {
-            var inkByType = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["entrance"] = "coral",
-                ["breakfast"] = "sun",
-                ["dairy"] = "inkBlue",
-                ["beverages"] = "inkBlue2",
-                ["frozen"] = "teal",
-                ["checkout"] = "coralInk",
-                ["floral"] = "coral",
-                ["stockroom"] = "teal",
-                ["backshop"] = "sun",
-                ["wet"] = "inkBlue",
-                ["wine"] = "inkBlue2",
-                ["staff"] = "teal",
-            };
             foreach (var room in MarketData.Rooms)
             {
-                var key = inkByType.TryGetValue(room.Type, out var ink) ? ink : "wall";
+                var signature = WorldArtSpec.For(room.Id);
+                var x = room.OriginI + MarketData.RoomTiles * 0.5f;
                 Box(
                     walls,
                     "Wall Wash " + room.Id,
-                    new Vector3(room.OriginI + MarketData.RoomTiles * 0.5f, 1.15f, 26.99f),
+                    new Vector3(x, 1.15f, 26.99f),
                     new Vector3(MarketData.RoomTiles - 0.25f, 1.9f, 0.02f),
-                    materials[key]);
+                    materials[WorldArtSpec.MaterialKey(signature.Wall)]);
+                Box(
+                    walls,
+                    "Wall Accent " + room.Id,
+                    new Vector3(x, 2.14f, 26.965f),
+                    new Vector3(MarketData.RoomTiles - 0.25f, 0.09f, 0.03f),
+                    materials[WorldArtSpec.MaterialKey(signature.Accent)]);
             }
         }
 
@@ -466,6 +443,11 @@ namespace HeistSim.Market.Editor
             Box(props, "Stock Carton A", new Vector3(room.OriginI + 2.0f, 0.55f, room.OriginJ + 2.3f), new Vector3(0.9f, 0.7f, 0.8f), materials["sun"]);
             Box(props, "Stock Carton B", new Vector3(room.OriginI + 3.0f, 0.55f, room.OriginJ + 2.3f), new Vector3(0.9f, 0.7f, 0.8f), materials["teal"]);
             Box(props, "Stock Carton C", new Vector3(room.OriginI + 2.5f, 1.15f, room.OriginJ + 2.3f), new Vector3(1.4f, 0.5f, 0.8f), materials["coral"]);
+            Box(props, "Stock Pallet East", new Vector3(room.OriginI + 5.0f, 0.08f, room.OriginJ + 2.6f), new Vector3(2.2f, 0.16f, 1.6f), materials["floor"]);
+            Box(props, "Stock Crate D", new Vector3(room.OriginI + 4.5f, 0.55f, room.OriginJ + 2.5f), new Vector3(0.9f, 0.8f, 0.8f), materials["coralInk"]);
+            Box(props, "Stock Crate E", new Vector3(room.OriginI + 5.5f, 0.55f, room.OriginJ + 2.5f), new Vector3(0.9f, 0.8f, 0.8f), materials["inkBlue"]);
+            Box(props, "Stock Crate F", new Vector3(room.OriginI + 5.0f, 1.25f, room.OriginJ + 2.5f), new Vector3(1.2f, 0.5f, 0.8f), materials["sun"]);
+            Box(props, "Stock Crate G", new Vector3(room.OriginI + 2.2f, 0.5f, room.OriginJ + 4.6f), new Vector3(0.8f, 0.8f, 0.8f), materials["teal"]);
         }
 
         /// <summary>
@@ -481,6 +463,8 @@ namespace HeistSim.Market.Editor
             var glow = NewGroup(content, "Entrance Glow");
             Primitive(glow, "Arch Glow", PrimitiveType.Cylinder, new Vector3(x, 0.05f, z), new Vector3(3.4f, 0.01f, 3.4f), materials["glow"]);
             Sphere(glow, "Arch Light", new Vector3(x, 0.32f, z), new Vector3(0.5f, 0.5f, 0.5f), materials["sun"]);
+            Sphere(glow, "Arch Lamp West", new Vector3(x - 1.3f, 0.46f, z), new Vector3(0.24f, 0.24f, 0.24f), materials["sun"]);
+            Sphere(glow, "Arch Lamp East", new Vector3(x + 1.3f, 0.46f, z), new Vector3(0.24f, 0.24f, 0.24f), materials["sun"]);
         }
 
         /// <summary>
@@ -493,7 +477,9 @@ namespace HeistSim.Market.Editor
         {
             var dividers = NewGroup(content, RoomDividersGroup);
             var frames = NewGroup(content, "Door Frames");
+            var gaps = NewGroup(content, "Door Gaps");
             var dark = materials["black"];
+            var key = materials["inkBlue"];
             var low = (float)MarketData.DoorwayBandMin;
             var high = (float)MarketData.DoorwayBandMax;
 
@@ -505,9 +491,10 @@ namespace HeistSim.Market.Editor
                     var origin = row * MarketData.RoomTiles;
                     var from = row == 0 ? OuterInset : origin;
                     var to = row == MarketData.Rows - 1 ? MarketData.HeightTiles - OuterInset : origin + MarketData.RoomTiles;
-                    AddStub(dividers, "Divider V c" + column + " r" + row + " low", seamX, from, origin + low, origin, true, dark);
-                    AddStub(dividers, "Divider V c" + column + " r" + row + " high", seamX, origin + high, to, origin, true, dark);
+                    AddStub(dividers, "Divider V c" + column + " r" + row + " low", seamX, from, origin + low, origin, true, key);
+                    AddStub(dividers, "Divider V c" + column + " r" + row + " high", seamX, origin + high, to, origin, true, key);
                     AddDoorFrame(frames, seamX, origin + low, origin + high, true, dark, materials["coralInk"], "V c" + column + " r" + row);
+                    AddDoorGap(gaps, seamX, origin + low, origin + high, true, materials["sun"], "V c" + column + " r" + row);
                 }
             }
 
@@ -519,9 +506,10 @@ namespace HeistSim.Market.Editor
                     var origin = column * MarketData.RoomTiles;
                     var from = column == 0 ? OuterInset : origin;
                     var to = column == MarketData.Columns - 1 ? MarketData.WidthTiles - OuterInset : origin + MarketData.RoomTiles;
-                    AddStub(dividers, "Divider H r" + row + " c" + column + " low", seamZ, from, origin + low, origin, false, dark);
-                    AddStub(dividers, "Divider H r" + row + " c" + column + " high", seamZ, origin + high, to, origin, false, dark);
+                    AddStub(dividers, "Divider H r" + row + " c" + column + " low", seamZ, from, origin + low, origin, false, key);
+                    AddStub(dividers, "Divider H r" + row + " c" + column + " high", seamZ, origin + high, to, origin, false, key);
                     AddDoorFrame(frames, seamZ, origin + low, origin + high, false, dark, materials["coralInk"], "H r" + row + " c" + column);
+                    AddDoorGap(gaps, seamZ, origin + low, origin + high, false, materials["sun"], "H r" + row + " c" + column);
                 }
             }
         }
@@ -588,6 +576,30 @@ namespace HeistSim.Market.Editor
             }
         }
 
+        /// <summary>
+        /// Marks the walkable band on the floor with a Sun strip. The strip stops at the same
+        /// DoorwayBandMin and DoorwayBandMax values the key ink stubs leave empty.
+        /// </summary>
+        private static void AddDoorGap(
+            Transform parent,
+            float seam,
+            float bandStart,
+            float bandEnd,
+            bool vertical,
+            Material material,
+            string id)
+        {
+            var mid = (bandStart + bandEnd) * 0.5f;
+            var span = bandEnd - bandStart;
+            var position = vertical
+                ? new Vector3(seam, 0.034f, mid)
+                : new Vector3(mid, 0.034f, seam);
+            var size = vertical
+                ? new Vector3(0.16f, 0.008f, span)
+                : new Vector3(span, 0.008f, 0.16f);
+            Box(parent, "Door Gap " + id, position, size, material);
+        }
+
         /// <summary>Mirrors the room local doorway check in MarketGrid.IsDoorwayStep.</summary>
         private static bool IsDoorway(float localAlong)
             => localAlong > MarketData.DoorwayBandMin && localAlong < MarketData.DoorwayBandMax;
@@ -619,6 +631,100 @@ namespace HeistSim.Market.Editor
                 var position = MarketLayout.ItemPosition(fixture);
                 detail.transform.position = new Vector3(position.x, 0f, position.y);
             }
+        }
+
+        /// <summary>
+        /// Puts one geometric aisle sign at a department entrance. The post and bars use key ink, the panel uses
+        /// Card and the icon uses the department accent. No TextMeshPro component is created in the world.
+        /// </summary>
+        private static void BuildAisleSigns(Transform content, Dictionary<string, Material> materials)
+        {
+            var signs = NewGroup(content, "Aisle Signs");
+            foreach (var room in MarketData.Rooms)
+            {
+                var signature = WorldArtSpec.For(room.Id);
+                bool vertical;
+                float x;
+                float z;
+                if (room.AtI > 0)
+                {
+                    vertical = true;
+                    x = room.OriginI;
+                    z = room.OriginJ + 4.5f + 1.5f;
+                }
+                else if (room.AtJ > 0)
+                {
+                    vertical = false;
+                    x = room.OriginI + 4.5f + 1.5f;
+                    z = room.OriginJ;
+                }
+                else
+                {
+                    vertical = true;
+                    x = room.OriginI + MarketData.RoomTiles;
+                    z = room.OriginJ + 4.5f + 1.5f;
+                }
+
+                var sign = NewGroup(signs, "Aisle Sign " + room.Id);
+                Box(sign, "Post", new Vector3(x, 1.1f, z), new Vector3(0.08f, 2.2f, 0.08f), materials["inkBlue"]);
+                var panelSize = vertical
+                    ? new Vector3(0.06f, 0.5f, 0.9f)
+                    : new Vector3(0.9f, 0.5f, 0.06f);
+                Box(sign, "Panel", new Vector3(x, 2.05f, z), panelSize, materials["floor"]);
+                var iconPosition = vertical
+                    ? new Vector3(x + 0.05f, 2.1f, z - 0.18f)
+                    : new Vector3(x - 0.18f, 2.1f, z + 0.05f);
+                var iconSize = vertical
+                    ? new Vector3(0.08f, 0.3f, 0.3f)
+                    : new Vector3(0.3f, 0.3f, 0.08f);
+                Box(sign, "Icon " + room.Id, iconPosition, iconSize, materials[WorldArtSpec.MaterialKey(signature.Accent)]);
+                var barSize = vertical
+                    ? new Vector3(0.08f, 0.06f, 0.42f)
+                    : new Vector3(0.42f, 0.06f, 0.08f);
+                var barZ = vertical ? z + 0.16f : z + 0.05f;
+                var barX = vertical ? x + 0.05f : x + 0.18f;
+                Box(sign, "Number Bar A", new Vector3(barX, 2.03f, barZ), barSize, materials["inkBlue"]);
+                Box(sign, "Number Bar B", new Vector3(barX, 1.92f, barZ), barSize, materials["inkBlue2"]);
+            }
+        }
+
+        /// <summary>
+        /// Adds a striped Sun and Coral canopy over the r6 queue. The bars leave gaps so the checkout fixtures
+        /// stay readable from the isometric camera while the lane reads as a distinct department.
+        /// </summary>
+        private static void BuildCheckoutCanopy(Transform content, Dictionary<string, Material> materials)
+        {
+            var canopy = NewGroup(content, "Checkout Canopy");
+            var room = MarketData.Room("r6");
+            for (var k = 0; k < 6; k++)
+            {
+                var stripe = k % 2 == 0 ? "sun" : "coral";
+                Box(
+                    canopy,
+                    "Canopy Stripe " + k,
+                    new Vector3(room.OriginI + 0.9f + k * 1.4f, 2.55f, room.OriginJ + 3.2f),
+                    new Vector3(0.7f, 0.06f, 3.4f),
+                    materials[stripe]);
+            }
+
+            Box(canopy, "Canopy Beam West", new Vector3(room.OriginI + 0.4f, 2.5f, room.OriginJ + 3.2f), new Vector3(0.12f, 0.1f, 3.6f), materials["inkBlue"]);
+            Box(canopy, "Canopy Beam East", new Vector3(room.OriginI + 8.6f, 2.5f, room.OriginJ + 3.2f), new Vector3(0.12f, 0.1f, 3.6f), materials["inkBlue"]);
+        }
+
+        /// <summary>
+        /// Builds a black backing with coral posts, a key ink lintel and a Sun signal behind the EAS gate so the
+        /// exit scanner keeps a clear silhouette at gameplay zoom. No collider is added.
+        /// </summary>
+        private static void BuildEasSilhouette(Transform content, Dictionary<string, Material> materials)
+        {
+            var gate = MarketData.Fixture("m_eas1");
+            var position = MarketLayout.ItemPosition(gate);
+            var eas = NewGroup(content, "EAS Silhouette");
+            Box(eas, "EAS Backing", new Vector3(position.x, 0.78f, position.y), new Vector3(0.14f, 1.56f, 1.7f), materials["black"]);
+            Box(eas, "EAS Post West", new Vector3(position.x, 0.76f, position.y - 0.6f), new Vector3(0.2f, 1.52f, 0.12f), materials["coral"]);
+            Box(eas, "EAS Post East", new Vector3(position.x, 0.76f, position.y + 0.6f), new Vector3(0.2f, 1.52f, 0.12f), materials["coral"]);
+            Box(eas, "EAS Beam", new Vector3(position.x, 1.54f, position.y), new Vector3(0.22f, 0.12f, 1.5f), materials["inkBlue"]);
+            Box(eas, "EAS Signal", new Vector3(position.x + 0.14f, 1.62f, position.y), new Vector3(0.06f, 0.18f, 0.3f), materials["sun"]);
         }
 
         private static void BuildCameras(Transform content, Dictionary<string, Material> materials, Mesh coneMesh, out Transform[] cones)
@@ -702,6 +808,8 @@ namespace HeistSim.Market.Editor
             fan = fanObject.AddComponent<GuardVisionFan>();
             fan.fanMaterial = materials["cone"];
             fan.Rebuild(0.6f);
+            // The component clones its material at runtime. Give the saved scene an authored material too.
+            fanObject.GetComponent<MeshRenderer>().sharedMaterial = materials["cone"];
         }
 
         private static MarketHUD BuildHud(Camera camera, TMP_FontAsset font)

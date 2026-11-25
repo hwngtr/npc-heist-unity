@@ -1,2 +1,4 @@
 test-results.xml
+playmode-results.xml
 test-run.log
+__pycache__/

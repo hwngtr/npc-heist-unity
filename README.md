@@ -36,7 +36,7 @@ The C# controllers consume `GuardPercepts` and emit `GuardIntent`, mirroring `sr
 
 ## Play
 
-The playable market shift is `Assets/HeistSim/Market/Market.unity`. Rebuild it from the menu `Heist, Market, Build Level Scene`, then press Play.
+The playable 2D market shift is `Assets/HeistSim/Market2D/Market2D.unity`. Rebuild it from the menu `Heist, Market2D, Build Scene`, then press Play.
 
 | Input | Action |
 | --- | --- |
@@ -49,4 +49,4 @@ The playable market shift is `Assets/HeistSim/Market/Market.unity`. Rebuild it f
 
 Click the Game view once to give it focus before WASD works.
 
-The HUD shows the heat tier, the loot value against the 190 quota, the bag, the five objectives, the guard state with its controller badge, the staff backup radio and the timed action progress. `Assets/HeistSim/Market/Captures/Market.png` is the review capture of the built scene.
+The HUD shows the heat tier, the loot value against the 190 quota, the bag, the five objectives, the guard state with its controller badge, the staff backup radio and the timed action progress. `Assets/HeistSim/Market2D/Captures/Market2D.png` is the review capture of the built scene.

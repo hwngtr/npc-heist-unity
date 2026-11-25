@@ -7,7 +7,7 @@ UNITY="${UNITY:-/home/hwngtr/Unity/Hub/Editor/6000.6.10f1/Editor/Unity}"
 RESULTS="$ROOT/tools/test-results.xml"
 LOG="$ROOT/tools/test-run.log"
 
-mkdir -p "$ROOT/Tools"
+mkdir -p "$ROOT/tools"
 rm -f "$RESULTS"
 
 timeout 1800 "$UNITY" \

@@ -1,0 +1,59 @@
+{
+  "solver": "Z3 4.12.6",
+  "profilesVerified": [
+    "standard",
+    "aggressive",
+    "cautious",
+    "observant"
+  ],
+  "theorems": {
+    "two_boundary_stuttering_bisimulation": {
+      "status": "PROVED (UNSAT)",
+      "details": {
+        "standard": "UNSAT (Verified across all 6 operational states)",
+        "aggressive": "UNSAT (Verified across all 6 operational states)",
+        "cautious": "UNSAT (Verified across all 6 operational states)",
+        "observant": "UNSAT (Verified across all 6 operational states)"
+      }
+    },
+    "personality_dominance_ordering": {
+      "status": "PROVED (UNSAT)",
+      "visualEnvelopeOrder": "Cautious (4.8t, 59.6 deg) < Standard (5.4t, 68.8 deg) < Observant (7.2t, 96.3 deg)",
+      "attackEnvelopeOrder": "Cautious (1.20t) < Standard = Observant (1.38t) < Aggressive (1.85t)",
+      "alertThresholdOrder": "Aggressive (0.15) < Observant (0.18) < Standard (0.25) < Cautious (0.40)"
+    },
+    "bounded_calm_return_liveness": {
+      "status": "PROVED",
+      "boundsByProfile": {
+        "standard": {
+          "lostSightLimitTicks": 45,
+          "searchDurationLimitTicks": 90,
+          "maxAlertDecayTicks": 279,
+          "guaranteedReturnBoundTicks": 324,
+          "guaranteedReturnBoundSecondsAt60Hz": 5.4
+        },
+        "aggressive": {
+          "lostSightLimitTicks": 65,
+          "searchDurationLimitTicks": 115,
+          "maxAlertDecayTicks": 500,
+          "guaranteedReturnBoundTicks": 565,
+          "guaranteedReturnBoundSecondsAt60Hz": 9.42
+        },
+        "cautious": {
+          "lostSightLimitTicks": 32,
+          "searchDurationLimitTicks": 60,
+          "maxAlertDecayTicks": 180,
+          "guaranteedReturnBoundTicks": 212,
+          "guaranteedReturnBoundSecondsAt60Hz": 3.53
+        },
+        "observant": {
+          "lostSightLimitTicks": 55,
+          "searchDurationLimitTicks": 105,
+          "maxAlertDecayTicks": 382,
+          "guaranteedReturnBoundTicks": 437,
+          "guaranteedReturnBoundSecondsAt60Hz": 7.28
+        }
+      }
+    }
+  }
+}

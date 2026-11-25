@@ -3,10 +3,8 @@
     "rootNamespace": "HeistSim.Tests",
     "references": [
         "HeistSim",
-        "HeistSim.Arena",
-        "HeistSim.Market",
-        "HeistSim.Market.Editor",
-        "Unity.TextMeshPro",
+        "HeistSim.Market2D",
+        "HeistSim.Market2D.Editor",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

@@ -1,0 +1,17 @@
+{
+    "name": "HeistSim.Market2D",
+    "rootNamespace": "HeistSim.Market2D",
+    "references": [
+        "HeistSim",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,19 @@
+{
+    "name": "HeistSim.Market2D.Editor",
+    "rootNamespace": "HeistSim.Market2D.Editor",
+    "references": [
+        "HeistSim",
+        "HeistSim.Market2D"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

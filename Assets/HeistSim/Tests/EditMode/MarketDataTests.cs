@@ -13,7 +13,7 @@ namespace HeistSim.Tests
         public void LevelCountsMatchTheBrowserGame()
         {
             Assert.That(MarketData.Rooms.Length, Is.EqualTo(12), "house.rooms has 12 rooms");
-            Assert.That(MarketData.Fixtures.Length, Is.EqualTo(78), "house.items has 78 placed fixtures");
+            Assert.That(MarketData.Fixtures.Length, Is.EqualTo(62), "decongested floorplan has 62 placed fixtures");
             Assert.That(MarketData.Loot.Length, Is.EqualTo(16), "MARKET_LOOT has 16 targets");
             Assert.That(MarketData.Cameras.Length, Is.EqualTo(6), "MARKET_CAMERAS has 6 cameras");
             Assert.That(MarketData.MotionZones.Length, Is.EqualTo(3), "motionZones has 3 zones");

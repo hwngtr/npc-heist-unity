@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Market2DPostFx
+  m_Shader: {fileID: 4800000, guid: 087c8f52e60b31b1da400365f101c5df, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MoodLut:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _CrtBoost: 1.18
+    - _CrtEnabled: 0
+    - _CrtGlow: 0.16
+    - _CrtMaskStrength: 0.25
+    - _CrtScanlineStrength: 0.55
+    - _MoodPhase: 2.2079985
+    - _MoodStrength: 0.45
+    - _TransPixelSize: 3
+    - _TransProgress: 0
+    - _TransReverse: 0
+    - _TransStyle: 2
+    m_Colors:
+    - _CrtWarp: {r: 0.025, g: 0.032, b: 0, a: 0}
+    - _TransCenter: {r: 0.34935433, g: 0.43382943, b: 0, a: 0}
+    - _TransColor: {r: 0.20392157, g: 0.2901961, b: 0.5019608, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

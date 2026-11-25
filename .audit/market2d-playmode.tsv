@@ -1,0 +1,1 @@
+2026-11-24T11:38:42Z	playmode-verification	stale minimap threshold corrected after runtime evidence showed the designed 74px board	test expected >80 while Market2DHud.uss declares height 74px; focused test-only fix	PlayMode 1/1; EditMode 228/228	Market2D final PlayMode pass complete

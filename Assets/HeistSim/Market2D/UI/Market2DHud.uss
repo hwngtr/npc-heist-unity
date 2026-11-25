@@ -1,0 +1,978 @@
+/* Frischemarkt 2D Riso Editorial UI — faithful to bot-house-main/docs/style.css.
+   No rounded corners, no gradients, crisp 1.5px #344A80 ink rules, hard offset
+   print shadows, warm #F3EBDD paper stock, #FBF6EC cards, and Bayer dither bars. */
+
+:root {
+    --paper: #f3ebdd;
+    --card: #fbf6ec;
+    --ink: #344a80;
+    --ink-2: #56628a;
+    --line: rgba(52, 74, 128, 0.28);
+    --coral: #ee6852;
+    --coral-ink: #a8402d;
+    --sun: #ffd428;
+    --teal: #008c8a;
+    --black: #242226;
+}
+
+.app-root {
+    flex-direction: row;
+    width: 100%;
+    height: 100%;
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Regular.ttf");
+    color: var(--ink);
+    font-size: 14px;
+}
+
+/* ---------------- Left Isometric Viewport Overlay ---------------- */
+
+.viewport-overlay {
+    flex-grow: 1;
+    position: relative;
+}
+
+.shadow-wrap {
+    position: relative;
+    padding-right: 4px;
+    padding-bottom: 4px;
+}
+
+.shadow-wrap-sm {
+    position: relative;
+    padding-right: 2px;
+    padding-bottom: 2px;
+}
+
+.shadow-plate {
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    right: 0;
+    bottom: 0;
+    background-color: var(--ink);
+}
+
+.shadow-plate-sm {
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    right: 0;
+    bottom: 0;
+    background-color: var(--ink);
+}
+
+.shadow-plate-coral {
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    right: 0;
+    bottom: 0;
+    background-color: var(--coral);
+}
+
+.ink-box {
+    background-color: var(--card);
+    border-top-width: 1.5px;
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-width: 1.5px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+}
+
+/* Top-left compact keybar */
+.keybar-wrap {
+    position: absolute;
+    left: 14px;
+    top: 14px;
+}
+
+.keybar {
+    flex-direction: row;
+    align-items: center;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-left: 10px;
+    padding-right: 12px;
+}
+
+.keycap {
+    background-color: var(--sun);
+    color: var(--ink);
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+    font-size: 12px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    padding-left: 5px;
+    padding-right: 5px;
+    margin-right: 5px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+}
+
+.keycap-label {
+    font-size: 13px;
+    color: var(--ink);
+    margin-right: 12px;
+}
+
+.keycap-label-last {
+    font-size: 13px;
+    color: var(--ink);
+}
+
+/* Bottom-left department pill */
+.zone-pill-wrap {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+}
+
+.zone-pill {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 10px;
+    padding-right: 12px;
+}
+
+.zone-pill-kicker {
+    font-size: 9px;
+    color: var(--ink-2);
+    letter-spacing: 2px;
+    margin-bottom: 1px;
+}
+
+.zone-pill-name {
+    font-size: 13px;
+    color: var(--ink);
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+}
+
+/* Bottom-right zoom buttons */
+.zoom-group {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    flex-direction: row;
+}
+
+.zoom-btn-wrap {
+    margin-left: 8px;
+}
+
+.zoom-btn {
+    width: 40px;
+    height: 40px;
+    background-color: var(--card);
+    color: var(--ink);
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+    font-size: 18px;
+    -unity-text-align: middle-center;
+    border-top-width: 1.5px;
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-width: 1.5px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.zoom-btn-fit {
+    width: 50px;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+.zoom-btn:hover {
+    background-color: var(--sun);
+}
+
+/* Bottom-center contextual prompt, channel bar, and refusal */
+.prompt-stack {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 20px;
+    align-items: center;
+}
+
+.refusal-banner {
+    background-color: var(--card);
+    border-top-width: 1.5px;
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-width: 1.5px;
+    border-top-color: var(--coral-ink);
+    border-right-color: var(--coral-ink);
+    border-bottom-color: var(--coral-ink);
+    border-left-color: var(--coral-ink);
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 14px;
+    padding-right: 14px;
+    margin-bottom: 8px;
+}
+
+.refusal-text {
+    color: var(--coral-ink);
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+    font-size: 13px;
+    letter-spacing: 1px;
+}
+
+.prompt-card {
+    flex-direction: column;
+    min-width: 280px;
+    max-width: 460px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-left: 12px;
+    padding-right: 14px;
+}
+
+.prompt-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.prompt-key {
+    width: 24px;
+    height: 24px;
+    background-color: var(--sun);
+    border-top-width: 1.5px;
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-width: 1.5px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+    color: var(--ink);
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+    font-size: 14px;
+    -unity-text-align: middle-center;
+    margin-right: 10px;
+}
+
+.prompt-label {
+    font-size: 14px;
+    color: var(--ink);
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+}
+
+.channel-track {
+    height: 10px;
+    margin-top: 7px;
+    background-color: var(--paper);
+    border-top-width: 1.5px;
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-width: 1.5px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+}
+
+.channel-fill {
+    height: 100%;
+    width: 0%;
+    background-color: var(--sun);
+    background-image: url("project://database/Assets/HeistSim/Market2D/Sprites/UI/dither_sun.png");
+    background-repeat: repeat repeat;
+    background-size: 8px 8px;
+}
+
+/* Outcome receipt modal */
+.outcome-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(243, 235, 221, 0.55);
+}
+
+.outcome-card {
+    width: 360px;
+    padding: 20px 22px;
+}
+
+.outcome-kicker {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--coral-ink);
+    margin-bottom: 4px;
+}
+
+.outcome-title {
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSerif-Bold.ttf");
+    font-size: 32px;
+    color: var(--ink);
+    margin-bottom: 6px;
+}
+
+.outcome-sub {
+    font-size: 14px;
+    color: var(--ink-2);
+    white-space: normal;
+}
+
+/* ---------------- Right Editorial Panel (420px) ---------------- */
+
+.side-panel {
+    width: 420px;
+    flex-shrink: 0;
+    background-color: var(--paper);
+    border-left-width: 2px;
+    border-left-color: var(--ink);
+    padding-top: 9px;
+    padding-bottom: 9px;
+    padding-left: 20px;
+    padding-right: 20px;
+    flex-direction: column;
+}
+
+.header-block {
+    margin-bottom: 6px;
+    flex-shrink: 0;
+}
+
+.display-title {
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSerif-Regular.ttf");
+    font-size: 28px;
+    color: var(--ink);
+    margin: 0;
+    padding: 0;
+    letter-spacing: -0.5px;
+}
+
+.display-lede {
+    font-size: 11px;
+    color: var(--ink-2);
+    margin-top: 1px;
+    white-space: normal;
+}
+
+/* Shift Brief Wallet Card */
+.brief-card {
+    padding-top: 7px;
+    padding-bottom: 7px;
+    padding-left: 14px;
+    padding-right: 14px;
+}
+
+.brief-top {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.loot-group {
+    flex-direction: row;
+    align-items: flex-end;
+}
+
+.loot-big {
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSerif-Bold.ttf");
+    font-size: 32px;
+    color: var(--ink);
+    margin-right: 6px;
+}
+
+.loot-quota {
+    font-size: 13px;
+    color: var(--ink-2);
+}
+
+.guard-chip {
+    flex-direction: row;
+    align-items: center;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    padding-left: 8px;
+    padding-right: 8px;
+    background-color: var(--paper);
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+}
+
+.guard-dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--teal);
+    margin-right: 6px;
+}
+
+.guard-dot-warn {
+    background-color: var(--sun);
+}
+
+.guard-dot-alert {
+    background-color: var(--coral);
+}
+
+.guard-chip-text {
+    font-size: 12px;
+    color: var(--ink);
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+}
+
+/* 2x2 Stat Grid (matching .rates li in style.css) */
+.stat-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.stat-cell {
+    width: 48.5%;
+    background-color: var(--paper);
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: var(--line);
+    border-right-color: var(--line);
+    border-bottom-color: var(--line);
+    border-left-color: var(--line);
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 9px;
+    padding-right: 9px;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 15px;
+    color: var(--ink);
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+}
+
+.stat-value-alert {
+    color: var(--coral-ink);
+}
+
+.stat-sub {
+    font-size: 11px;
+    color: var(--ink-2);
+    margin-top: 1px;
+}
+
+/* Bayer-dithered Heat Bar (matching .bar / .bar-fill in style.css) */
+.heat-header {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.heat-title {
+    font-size: 12px;
+    color: var(--ink);
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+}
+
+.heat-tier-label {
+    font-size: 12px;
+    color: var(--coral-ink);
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+}
+
+.dither-bar {
+    height: 12px;
+    background-color: var(--paper);
+    border-top-width: 1.5px;
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-width: 1.5px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+    margin-bottom: 8px;
+}
+
+.dither-bar-fill {
+    height: 100%;
+    width: 12%;
+    background-color: var(--coral);
+    background-image: url("project://database/Assets/HeistSim/Market2D/Sprites/UI/dither_coral.png");
+    background-repeat: repeat repeat;
+    background-size: 8px 8px;
+}
+
+/* Objectives Checklist */
+.obj-list {
+    flex-direction: column;
+}
+
+.obj-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 3px;
+}
+
+.obj-box {
+    width: 12px;
+    height: 12px;
+    background-color: var(--paper);
+    border-top-width: 1.5px;
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-width: 1.5px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+    margin-right: 8px;
+}
+
+.obj-box-done {
+    background-color: var(--teal);
+    border-top-color: var(--teal);
+    border-right-color: var(--teal);
+    border-bottom-color: var(--teal);
+    border-left-color: var(--teal);
+}
+
+.obj-text {
+    font-size: 13px;
+    color: var(--ink);
+}
+
+.obj-text-done {
+    color: var(--ink-2);
+}
+
+/* Primary CTA Buttons (matching .cta in style.css) */
+.cta-row {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 9px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+
+.cta-wrap-main {
+    width: 61%;
+    position: relative;
+    padding-right: 3px;
+    padding-bottom: 3px;
+}
+
+.cta-wrap-sec {
+    width: 36%;
+    position: relative;
+    padding-right: 3px;
+    padding-bottom: 3px;
+}
+
+.cta-btn {
+    height: 36px;
+    background-color: var(--ink);
+    color: var(--paper);
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+    font-size: 13px;
+    border-top-width: 1.5px;
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-width: 1.5px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    margin: 0;
+    padding: 0 10px;
+}
+
+.cta-btn:hover {
+    background-color: var(--coral-ink);
+    border-top-color: var(--coral-ink);
+    border-right-color: var(--coral-ink);
+    border-bottom-color: var(--coral-ink);
+    border-left-color: var(--coral-ink);
+}
+
+.cta-btn-sec {
+    background-color: var(--teal);
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+}
+
+.cta-btn-sec:hover {
+    background-color: var(--sun);
+    color: var(--ink);
+}
+
+/* 12-Room Floorplan Minimap Card */
+.map-wrap {
+    margin-bottom: 6px;
+    flex-shrink: 0;
+}
+
+.map-card {
+    padding: 6px 10px;
+}
+
+.section-kicker {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--ink-2);
+    margin-bottom: 4px;
+}
+
+.minimap-board {
+    position: relative;
+    width: 100%;
+    height: 74px;
+    background-color: var(--paper);
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+}
+
+.minimap-row {
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+.minimap-cell {
+    flex-grow: 1;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-right-color: var(--line);
+    border-bottom-color: var(--line);
+    padding: 3px 4px;
+}
+
+.minimap-cell-active {
+    background-color: rgba(255, 212, 40, 0.42);
+    border-top-width: 1.5px;
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-width: 1.5px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+}
+
+.minimap-cell-label {
+    font-size: 9px;
+    color: var(--ink-2);
+}
+
+.minimap-pip {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+}
+
+.pip-player { background-color: var(--teal); width: 9px; height: 9px; }
+.pip-guard { background-color: var(--coral); width: 9px; height: 9px; }
+.pip-staff { background-color: var(--sun); width: 7px; height: 7px; }
+.pip-exit { background-color: var(--card); border-top-color: var(--coral-ink); border-right-color: var(--coral-ink); border-bottom-color: var(--coral-ink); border-left-color: var(--coral-ink); width: 9px; height: 9px; }
+
+/* Shift Journal Feed */
+.journal-block {
+    flex-grow: 1;
+    flex-shrink: 1;
+    overflow: hidden;
+    border-top-width: 1.5px;
+    border-top-color: var(--line);
+    padding-top: 8px;
+}
+
+.journal-heading {
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSerif-Regular.ttf");
+    font-size: 17px;
+    color: var(--ink);
+    margin-bottom: 4px;
+    flex-shrink: 0;
+}
+
+.log-row {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    min-height: 20px;
+    margin-bottom: 3px;
+}
+
+.log-tag {
+    width: 52px;
+    font-size: 10px;
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+    color: var(--ink);
+    background-color: var(--card);
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: var(--line);
+    border-right-color: var(--line);
+    border-bottom-color: var(--line);
+    border-left-color: var(--line);
+    -unity-text-align: middle-center;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    margin-right: 8px;
+}
+
+.log-tag-alarm {
+    color: var(--paper);
+    background-color: var(--coral-ink);
+    border-top-color: var(--coral-ink);
+    border-right-color: var(--coral-ink);
+    border-bottom-color: var(--coral-ink);
+    border-left-color: var(--coral-ink);
+}
+
+.log-msg {
+    font-size: 12px;
+    color: var(--ink);
+    flex-shrink: 1;
+}
+
+/* Alert edge flash frame */
+.alert-vignette {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    border-top-width: 5px;
+    border-right-width: 5px;
+    border-bottom-width: 5px;
+    border-left-width: 5px;
+    border-top-color: var(--coral);
+    border-right-color: var(--coral);
+    border-bottom-color: var(--coral);
+    border-left-color: var(--coral);
+    background-color: rgba(238, 104, 82, 0.08);
+}
+
+/* Floating world-projected popups (+€58, VITRINE OPEN) */
+.popup-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+}
+
+.float-popup {
+    position: absolute;
+    background-color: var(--sun);
+    color: var(--ink);
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+    font-size: 13px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    padding-left: 7px;
+    padding-right: 7px;
+    border-top-width: 1.5px;
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-width: 1.5px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+}
+
+.float-popup-rf {
+    background-color: var(--coral);
+    color: var(--card);
+}
+
+/* Off-screen next-objective compass pill */
+.compass-pill {
+    position: absolute;
+    flex-direction: row;
+    align-items: center;
+    background-color: var(--card);
+    border-top-width: 1.5px;
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-width: 1.5px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+    padding-top: 3px;
+    padding-bottom: 3px;
+    padding-left: 7px;
+    padding-right: 8px;
+}
+
+.compass-arrow {
+    background-color: var(--sun);
+    color: var(--ink);
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+    font-size: 12px;
+    padding-left: 4px;
+    padding-right: 4px;
+    margin-right: 5px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+}
+
+.compass-label {
+    font-size: 11px;
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationSans-Bold.ttf");
+    color: var(--ink);
+}
+
+/* Zoom readout & SFX mute toggle */
+.zoom-readout {
+    height: 40px;
+    min-width: 50px;
+    background-color: var(--paper);
+    color: var(--ink);
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationMono-Regular.ttf");
+    font-size: 12px;
+    -unity-text-align: middle-center;
+    padding-left: 6px;
+    padding-right: 6px;
+    border-top-width: 1.5px;
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-left-width: 1.5px;
+    border-top-color: var(--ink);
+    border-right-color: var(--ink);
+    border-bottom-color: var(--ink);
+    border-left-color: var(--ink);
+}
+
+.zoom-btn-sfx {
+    width: 48px;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+.zoom-btn-muted {
+    background-color: var(--paper);
+    color: var(--ink-2);
+}
+
+.zoom-btn:hover {
+    background-color: var(--sun);
+}
+
+.zoom-btn:active {
+    translate: 2px 2px;
+}
+
+.cta-btn:active {
+    translate: 2px 2px;
+}
+
+/* Interactive floorplan header & loot indicator */
+.map-header-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.map-hint {
+    font-size: 9px;
+    color: var(--ink-2);
+    margin-bottom: 5px;
+}
+
+.minimap-cell:hover {
+    background-color: rgba(0, 140, 138, 0.16);
+}
+
+.minimap-cell-has-loot {
+    border-bottom-width: 2.5px;
+    border-bottom-color: var(--sun);
+}
+
+/* Live AI Brain Telemetry Box */
+.ai-trace-box {
+    background-color: var(--paper);
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: var(--line);
+    border-right-color: var(--line);
+    border-bottom-color: var(--line);
+    border-left-color: var(--line);
+    padding-top: 3px;
+    padding-bottom: 3px;
+    padding-left: 7px;
+    padding-right: 7px;
+    margin-bottom: 6px;
+}
+
+.ai-trace-line {
+    -unity-font: url("project://database/Assets/HeistSim/Market2D/UI/Fonts/LiberationMono-Regular.ttf");
+    font-size: 10px;
+    color: var(--ink);
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.cta-btn-trait {
+    background-color: var(--sun);
+    color: var(--ink);
+    font-size: 11px;
+}
+
+.is-hidden {
+    display: none;
+}

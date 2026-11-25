@@ -1,0 +1,265 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="Market2DHud.uss" />
+    <ui:VisualElement name="app-root" class="app-root" picking-mode="Ignore">
+
+        <!-- Left Isometric Viewport Overlay -->
+        <ui:VisualElement name="viewport-overlay" class="viewport-overlay" picking-mode="Ignore">
+
+            <!-- Brief coral alert edge frame on sighting / EAS alarm -->
+            <ui:VisualElement name="alert-vignette" class="alert-vignette is-hidden" picking-mode="Ignore" />
+
+            <!-- Floating world-projected gain/status popups (+€58, VITRINE OPEN) -->
+            <ui:VisualElement name="popup-layer" class="popup-layer" picking-mode="Ignore" />
+
+            <!-- Off-screen next-objective directional compass pill -->
+            <ui:VisualElement name="compass-pill" class="compass-pill is-hidden" picking-mode="Ignore">
+                <ui:Label name="compass-arrow" text="→" class="compass-arrow" picking-mode="Ignore" />
+                <ui:Label name="compass-label" text="€32 LOOT" class="compass-label" picking-mode="Ignore" />
+            </ui:VisualElement>
+
+            <!-- Top-left key strip -->
+            <ui:VisualElement class="keybar-wrap shadow-wrap-sm" picking-mode="Ignore">
+                <ui:VisualElement class="shadow-plate-sm" picking-mode="Ignore" />
+                <ui:VisualElement class="ink-box keybar" picking-mode="Ignore">
+                    <ui:Label text="WASD" class="keycap" picking-mode="Ignore" />
+                    <ui:Label text="Sneak" class="keycap-label" picking-mode="Ignore" />
+                    <ui:Label text="E" class="keycap" picking-mode="Ignore" />
+                    <ui:Label text="Steal / Act" class="keycap-label" picking-mode="Ignore" />
+                    <ui:Label text="C" class="keycap" picking-mode="Ignore" />
+                    <ui:Label text="Crouch" class="keycap-label" picking-mode="Ignore" />
+                    <ui:Label text="Shift" class="keycap" picking-mode="Ignore" />
+                    <ui:Label text="Sprint" class="keycap-label" picking-mode="Ignore" />
+                    <ui:Label text="Q" class="keycap" picking-mode="Ignore" />
+                    <ui:Label text="Decoy" class="keycap-label" picking-mode="Ignore" />
+                    <ui:Label text="P" class="keycap" picking-mode="Ignore" />
+                    <ui:Label text="Trait" class="keycap-label" picking-mode="Ignore" />
+                    <ui:Label text="RMB" class="keycap" picking-mode="Ignore" />
+                    <ui:Label text="Scout" class="keycap-label-last" picking-mode="Ignore" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Bottom-left current department pill -->
+            <ui:VisualElement class="zone-pill-wrap shadow-wrap-sm" picking-mode="Ignore">
+                <ui:VisualElement class="shadow-plate-sm" picking-mode="Ignore" />
+                <ui:VisualElement class="ink-box zone-pill" picking-mode="Ignore">
+                    <ui:Label text="CURRENT DEPARTMENT" class="zone-pill-kicker" picking-mode="Ignore" />
+                    <ui:Label name="zone-name" text="Entrance · Obst &amp; Gemüse · Pfand" class="zone-pill-name" picking-mode="Ignore" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Bottom-center contextual action prompt + channel bar + refusal -->
+            <ui:VisualElement class="prompt-stack" picking-mode="Ignore">
+                <ui:VisualElement name="refusal-banner" class="refusal-banner is-hidden" picking-mode="Ignore">
+                    <ui:Label name="refusal-text" text="BAG FULL" class="refusal-text" picking-mode="Ignore" />
+                </ui:VisualElement>
+
+                <ui:VisualElement name="prompt-wrap" class="shadow-wrap-sm is-hidden" picking-mode="Ignore">
+                    <ui:VisualElement class="shadow-plate-sm" picking-mode="Ignore" />
+                    <ui:VisualElement class="ink-box prompt-card" picking-mode="Ignore">
+                        <ui:VisualElement class="prompt-row" picking-mode="Ignore">
+                            <ui:Label text="E" class="prompt-key" picking-mode="Ignore" />
+                            <ui:Label name="prompt-label" text="Hold E · Steal item" class="prompt-label" picking-mode="Ignore" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="channel-track" class="channel-track is-hidden" picking-mode="Ignore">
+                            <ui:VisualElement name="channel-fill" class="channel-fill" picking-mode="Ignore" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Bottom-right zoom + SFX controls -->
+            <ui:VisualElement class="zoom-group" picking-mode="Ignore">
+                <ui:VisualElement class="zoom-btn-wrap shadow-wrap-sm">
+                    <ui:VisualElement class="shadow-plate-sm" picking-mode="Ignore" />
+                    <ui:Button name="btn-mute" text="SFX" class="zoom-btn zoom-btn-sfx" />
+                </ui:VisualElement>
+                <ui:VisualElement class="zoom-btn-wrap shadow-wrap-sm" picking-mode="Ignore">
+                    <ui:VisualElement class="shadow-plate-sm" picking-mode="Ignore" />
+                    <ui:Label name="zoom-readout" text="100%" class="zoom-readout" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:VisualElement class="zoom-btn-wrap shadow-wrap-sm">
+                    <ui:VisualElement class="shadow-plate-sm" picking-mode="Ignore" />
+                    <ui:Button name="btn-zoom-in" text="+" class="zoom-btn" />
+                </ui:VisualElement>
+                <ui:VisualElement class="zoom-btn-wrap shadow-wrap-sm">
+                    <ui:VisualElement class="shadow-plate-sm" picking-mode="Ignore" />
+                    <ui:Button name="btn-zoom-out" text="-" class="zoom-btn" />
+                </ui:VisualElement>
+                <ui:VisualElement class="zoom-btn-wrap shadow-wrap-sm">
+                    <ui:VisualElement class="shadow-plate-sm" picking-mode="Ignore" />
+                    <ui:Button name="btn-zoom-fit" text="FIT" class="zoom-btn zoom-btn-fit" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Outcome Receipt Modal -->
+            <ui:VisualElement name="outcome-overlay" class="outcome-overlay is-hidden" picking-mode="Ignore">
+                <ui:VisualElement class="shadow-wrap">
+                    <ui:VisualElement class="shadow-plate" picking-mode="Ignore" />
+                    <ui:VisualElement class="ink-box outcome-card">
+                        <ui:Label name="outcome-kicker" text="SHIFT RECEIPT" class="outcome-kicker" />
+                        <ui:Label name="outcome-title" text="Escaped" class="outcome-title" />
+                        <ui:Label name="outcome-sub" text="Press R or click New Shift to run another heist." class="outcome-sub" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+        <!-- Right Editorial Panel (420px) -->
+        <ui:VisualElement name="side-panel" class="side-panel">
+
+            <ui:VisualElement class="header-block">
+                <ui:Label text="Frischemarkt" class="display-title" />
+                <ui:Label text="Steal €190 in goods, kill RF tags, and slip past the EAS exit before the detective catches you." class="display-lede" />
+            </ui:VisualElement>
+
+            <!-- Shift Brief Card -->
+            <ui:VisualElement class="shadow-wrap">
+                <ui:VisualElement class="shadow-plate" picking-mode="Ignore" />
+                <ui:VisualElement class="ink-box brief-card">
+
+                    <ui:VisualElement class="brief-top">
+                        <ui:VisualElement class="loot-group">
+                            <ui:Label name="loot-big" text="€0" class="loot-big" />
+                            <ui:Label name="loot-quota" text="stolen · quota €190" class="loot-quota" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="guard-chip">
+                            <ui:VisualElement name="guard-dot" class="guard-dot" />
+                            <ui:Label name="guard-chip-text" text="PATROL · FSM" class="guard-chip-text" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <!-- Live AI Brain Decision Rule / BT Preemption Strip -->
+                    <ui:VisualElement class="ai-trace-box">
+                        <ui:Label name="ai-trace-line" text="FSM (Standard · FOV 5.4t)  Patrol ──[route_assigned]──▶ Patrol" class="ai-trace-line" />
+                    </ui:VisualElement>
+
+                    <!-- 2x2 Stat Grid -->
+                    <ui:VisualElement class="stat-grid">
+                        <ui:VisualElement class="stat-cell">
+                            <ui:Label name="stat-bag" text="0 / 6" class="stat-value" />
+                            <ui:Label text="bag capacity" class="stat-sub" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="stat-cell">
+                            <ui:Label name="stat-tags" text="0 active" class="stat-value" />
+                            <ui:Label text="RF security tags" class="stat-sub" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="stat-cell">
+                            <ui:Label name="stat-cctv" text="Online" class="stat-value" />
+                            <ui:Label text="CCTV power grid" class="stat-sub" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="stat-cell">
+                            <ui:Label name="stat-radio" text="Quiet" class="stat-value" />
+                            <ui:Label text="staff backup radio" class="stat-sub" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <!-- Bayer-dithered Heat Meter -->
+                    <ui:VisualElement class="heat-header">
+                        <ui:Label text="Store suspicion" class="heat-title" />
+                        <ui:Label name="heat-tier-label" text="Calm" class="heat-tier-label" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="dither-bar">
+                        <ui:VisualElement name="heat-fill" class="dither-bar-fill" />
+                    </ui:VisualElement>
+
+                    <!-- Objectives -->
+                    <ui:VisualElement class="obj-list">
+                        <ui:VisualElement class="obj-row">
+                            <ui:VisualElement name="obj-box-0" class="obj-box" />
+                            <ui:Label name="obj-text-0" text="Cut the CCTV power panel" class="obj-text" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="obj-row">
+                            <ui:VisualElement name="obj-box-1" class="obj-box" />
+                            <ui:Label name="obj-text-1" text="Force the spirits vitrine" class="obj-text" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="obj-row">
+                            <ui:VisualElement name="obj-box-2" class="obj-box" />
+                            <ui:Label name="obj-text-2" text="Bag €190 in goods" class="obj-text" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="obj-row">
+                            <ui:VisualElement name="obj-box-3" class="obj-box" />
+                            <ui:Label name="obj-text-3" text="De-tag all RF items" class="obj-text" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="obj-row">
+                            <ui:VisualElement name="obj-box-4" class="obj-box" />
+                            <ui:Label name="obj-text-4" text="Exit through the EAS gate" class="obj-text" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Action Buttons -->
+            <ui:VisualElement class="cta-row">
+                <ui:VisualElement class="cta-wrap-main">
+                    <ui:VisualElement class="shadow-plate-coral" picking-mode="Ignore" />
+                    <ui:Button name="btn-switch-ai" text="AI: FSM [Tab]" class="cta-btn" />
+                </ui:VisualElement>
+                <ui:VisualElement class="cta-wrap-sec">
+                    <ui:VisualElement class="shadow-plate-sm" picking-mode="Ignore" />
+                    <ui:Button name="btn-trait" text="Standard [P]" class="cta-btn cta-btn-trait" />
+                </ui:VisualElement>
+                <ui:VisualElement class="cta-wrap-sec">
+                    <ui:VisualElement class="shadow-plate-sm" picking-mode="Ignore" />
+                    <ui:Button name="btn-reset" text="Reset [R]" class="cta-btn cta-btn-sec" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- 12-Room Floorplan Minimap -->
+            <ui:VisualElement class="shadow-wrap-sm map-wrap">
+                <ui:VisualElement class="shadow-plate-sm" picking-mode="Ignore" />
+                <ui:VisualElement class="ink-box map-card">
+                    <ui:VisualElement class="map-header-row">
+                        <ui:Label text="STORE FLOORPLAN (12 DEPTS)" class="section-kicker" />
+                        <ui:Label text="click room to scout" class="map-hint" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="minimap-board" class="minimap-board">
+                        <ui:VisualElement class="minimap-row">
+                            <ui:VisualElement name="mm-r1" class="minimap-cell"><ui:Label text="ENTR" class="minimap-cell-label" /></ui:VisualElement>
+                            <ui:VisualElement name="mm-r2" class="minimap-cell"><ui:Label text="BAKE" class="minimap-cell-label" /></ui:VisualElement>
+                            <ui:VisualElement name="mm-r3" class="minimap-cell"><ui:Label text="DAIRY" class="minimap-cell-label" /></ui:VisualElement>
+                            <ui:VisualElement name="mm-r7" class="minimap-cell"><ui:Label text="FLOR" class="minimap-cell-label" /></ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="minimap-row">
+                            <ui:VisualElement name="mm-r4" class="minimap-cell"><ui:Label text="DRINK" class="minimap-cell-label" /></ui:VisualElement>
+                            <ui:VisualElement name="mm-r5" class="minimap-cell"><ui:Label text="FROZ" class="minimap-cell-label" /></ui:VisualElement>
+                            <ui:VisualElement name="mm-r12" class="minimap-cell"><ui:Label text="STAFF" class="minimap-cell-label" /></ui:VisualElement>
+                            <ui:VisualElement name="mm-r8" class="minimap-cell"><ui:Label text="BOH" class="minimap-cell-label" /></ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="minimap-row">
+                            <ui:VisualElement name="mm-r9" class="minimap-cell"><ui:Label text="BREAD" class="minimap-cell-label" /></ui:VisualElement>
+                            <ui:VisualElement name="mm-r10" class="minimap-cell"><ui:Label text="DELI" class="minimap-cell-label" /></ui:VisualElement>
+                            <ui:VisualElement name="mm-r11" class="minimap-cell"><ui:Label text="WINE" class="minimap-cell-label" /></ui:VisualElement>
+                            <ui:VisualElement name="mm-r6" class="minimap-cell"><ui:Label text="EXIT" class="minimap-cell-label" /></ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="pip-exit" class="minimap-pip pip-exit" picking-mode="Ignore" />
+                        <ui:VisualElement name="pip-staff" class="minimap-pip pip-staff" picking-mode="Ignore" />
+                        <ui:VisualElement name="pip-guard" class="minimap-pip pip-guard" picking-mode="Ignore" />
+                        <ui:VisualElement name="pip-player" class="minimap-pip pip-player" picking-mode="Ignore" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Shift Journal -->
+            <ui:VisualElement class="journal-block">
+                <ui:Label text="Shift journal" class="journal-heading" />
+                <ui:VisualElement name="log-container">
+                    <ui:VisualElement name="log-row-0" class="log-row">
+                        <ui:Label name="log-tag-0" text="START" class="log-tag" />
+                        <ui:Label name="log-msg-0" text="Entered Frischemarkt via north-west portal" class="log-msg" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="log-row-1" class="log-row is-hidden">
+                        <ui:Label name="log-tag-1" text="" class="log-tag" />
+                        <ui:Label name="log-msg-1" text="" class="log-msg" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="log-row-2" class="log-row is-hidden">
+                        <ui:Label name="log-tag-2" text="" class="log-tag" />
+                        <ui:Label name="log-msg-2" text="" class="log-msg" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

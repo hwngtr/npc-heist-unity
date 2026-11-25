@@ -37,7 +37,63 @@ namespace HeistSim.Tests
         [Test]
         public void BlockedTileCountMatchesTheBrowserGame()
         {
-            Assert.That(MarketGrid.BlockedTiles().Count, Is.EqualTo(295), "295 tiles are covered by solid fixtures after the panel lane move");
+            Assert.That(MarketGrid.BlockedTiles().Count, Is.EqualTo(225), "225 tiles are covered by solid fixtures after room decongestion");
+        }
+
+        [Test]
+        public void EveryRoomDoorwayPairIsConnectedInsideItsRoom()
+        {
+            foreach (var room in MarketData.Rooms)
+            {
+                var oi = room.OriginI;
+                var oj = room.OriginJ;
+                var doors = new List<(string Name, GridPos Entry, GridPos StepIn)>();
+                if (room.AtI > 0) doors.Add(("W", new GridPos(oi + 0, oj + 4), new GridPos(oi + 1, oj + 4)));
+                if (room.AtI < MarketData.Columns - 1) doors.Add(("E", new GridPos(oi + 8, oj + 4), new GridPos(oi + 7, oj + 4)));
+                if (room.AtJ > 0) doors.Add(("N", new GridPos(oi + 4, oj + 0), new GridPos(oi + 4, oj + 1)));
+                if (room.AtJ < MarketData.Rows - 1) doors.Add(("S", new GridPos(oi + 4, oj + 8), new GridPos(oi + 4, oj + 7)));
+
+                foreach (var door in doors)
+                {
+                    Assert.That(Grid.IsWalkable(door.Entry.X, door.Entry.Y), Is.True,
+                        $"{room.Id} {door.Name} doorway tile {door.Entry} must be open");
+                    Assert.That(Grid.IsWalkable(door.StepIn.X, door.StepIn.Y), Is.True,
+                        $"{room.Id} {door.Name} step-in tile {door.StepIn} must be open (2-tile doorway clearance)");
+                }
+
+                for (var a = 0; a < doors.Count; a++)
+                {
+                    var visited = new HashSet<GridPos> { doors[a].Entry };
+                    var queue = new Queue<GridPos>();
+                    queue.Enqueue(doors[a].Entry);
+                    while (queue.Count > 0)
+                    {
+                        var cur = queue.Dequeue();
+                        var dirs = new[] { (1, 0), (-1, 0), (0, 1), (0, -1) };
+                        foreach (var (dx, dy) in dirs)
+                        {
+                            var nx = cur.X + dx;
+                            var ny = cur.Y + dy;
+                            if (nx < oi || nx >= oi + MarketData.RoomTiles || ny < oj || ny >= oj + MarketData.RoomTiles)
+                            {
+                                continue;
+                            }
+
+                            var next = new GridPos(nx, ny);
+                            if (Grid.IsWalkable(nx, ny) && visited.Add(next))
+                            {
+                                queue.Enqueue(next);
+                            }
+                        }
+                    }
+
+                    for (var b = a + 1; b < doors.Count; b++)
+                    {
+                        Assert.That(visited.Contains(doors[b].Entry), Is.True,
+                            $"{room.Id} must connect door {doors[a].Name} to door {doors[b].Name} inside the room");
+                    }
+                }
+            }
         }
 
         [Test]

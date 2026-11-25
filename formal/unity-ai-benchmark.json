@@ -1,0 +1,19 @@
+{
+  "structuralComplexity": {
+    "fsmStates": 7,
+    "fsmTransitions": 17,
+    "btTotalNodes": 21,
+    "btMaxDepth": 3,
+    "extensibilityCostAddNewBehavior": { "fsmEdgesModified": 6, "btNodesInserted": 2 }
+  },
+  "runs": [
+    { "profile": "standard", "arch": "FSM", "ticks": 5000, "usPerTick": 32.37, "transitions": 66, "detections": 22 },
+    { "profile": "standard", "arch": "BT", "ticks": 5000, "usPerTick": 33.99, "transitions": 66, "detections": 22 },
+    { "profile": "aggressive", "arch": "FSM", "ticks": 5000, "usPerTick": 31.48, "transitions": 70, "detections": 11 },
+    { "profile": "aggressive", "arch": "BT", "ticks": 5000, "usPerTick": 37.23, "transitions": 70, "detections": 11 },
+    { "profile": "cautious", "arch": "FSM", "ticks": 5000, "usPerTick": 21.91, "transitions": 118, "detections": 7 },
+    { "profile": "cautious", "arch": "BT", "ticks": 5000, "usPerTick": 27.31, "transitions": 48, "detections": 9 },
+    { "profile": "observant", "arch": "FSM", "ticks": 5000, "usPerTick": 41.03, "transitions": 55, "detections": 11 },
+    { "profile": "observant", "arch": "BT", "ticks": 5000, "usPerTick": 38.32, "transitions": 55, "detections": 11 }
+  ]
+}

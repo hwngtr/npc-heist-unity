@@ -337,7 +337,7 @@ namespace HeistSim
         private const float VitrineFallbackI = 17.2f;
         private const float VitrineFallbackJ = 1.0f;
 
-        private readonly GuardProfile _profile;
+        private GuardProfile _profile;
         private readonly NavGrid _grid;
         private readonly List<BlockedBox> _blockedBoxes = new();
         private readonly List<SightBox> _sightBoxes = new();
@@ -389,6 +389,11 @@ namespace HeistSim
         private NavState _guardNav = new();
         private NavState _staffNav = new();
         private NavState _playerNav = new();
+        private GuardPercepts _lastPercepts;
+        private GuardIntent _lastGuardIntent;
+        private FsmTransition _lastFsmTransition;
+        private IReadOnlyList<BtTraceEntry> _lastBtTrace = Array.Empty<BtTraceEntry>();
+        private IReadOnlyList<string> _lastBtAborted = Array.Empty<string>();
 
         /// <summary>Creates a deterministic market game with the given guard profile and controller.</summary>
         public HeistGame(GuardProfile profile, GuardArchitecture arch = GuardArchitecture.Fsm)
@@ -406,6 +411,39 @@ namespace HeistSim
         /// <summary>Active guard controller.</summary>
         public GuardArchitecture Arch => _arch;
 
+        /// <summary>Active guard personality profile.</summary>
+        public GuardProfile Profile => _profile;
+
+        /// <summary>Authoritative guard facing angle in radians.</summary>
+        public float GuardAngle => _guardAngle;
+
+        /// <summary>Authoritative staff facing angle in radians.</summary>
+        public float StaffAngle => _staffAngle;
+
+        /// <summary>Most recent sensor percepts evaluated by the guard controller.</summary>
+        public GuardPercepts LastPercepts => _lastPercepts;
+
+        /// <summary>Most recent locomotion/action intent emitted by the active guard controller.</summary>
+        public GuardIntent LastIntent => _lastGuardIntent;
+
+        /// <summary>Most recent FSM transition rule that fired.</summary>
+        public FsmTransition LastFsmTransition => _lastFsmTransition;
+
+        /// <summary>Most recent Behavior Tree evaluation trace.</summary>
+        public IReadOnlyList<BtTraceEntry> LastBtTrace => _lastBtTrace;
+
+        /// <summary>Nodes preempted via Abort() during the most recent Behavior Tree tick.</summary>
+        public IReadOnlyList<string> LastBtAborted => _lastBtAborted;
+
+        /// <summary>Origin of the currently expanding acoustic wave, or null when quiet.</summary>
+        public Vector2? ActiveSoundOrigin => _soundWave.HasValue ? _soundWave.Origin : (Vector2?)null;
+
+        /// <summary>Current radius of the expanding acoustic wave in tiles.</summary>
+        public float ActiveSoundRadius => _soundWave.HasValue ? _soundWave.Radius : 0f;
+
+        /// <summary>Maximum radius of the expanding acoustic wave in tiles.</summary>
+        public float ActiveSoundMaxRadius => _soundWave.HasValue ? _soundWave.MaxRadius : 0f;
+
         /// <summary>Whether guard and staff movement is frozen for deterministic tests.</summary>
         public bool FrozenPatrol
         {
@@ -418,6 +456,9 @@ namespace HeistSim
 
         /// <summary>Current alert tier index.</summary>
         public int Tier => _state.Tier;
+
+        /// <summary>Optional external speed multiplier (e.g. haul weight / fatigue); defaults to 1 for parity.</summary>
+        public float PlayerSpeedScale { get; set; } = 1f;
 
         /// <summary>Run outcome.</summary>
         public HeistOutcome Outcome => _outcome;
@@ -497,6 +538,30 @@ namespace HeistSim
                 _arch = GuardArchitecture.Fsm;
                 _fsm = new GuardFsm(_guardAction, _guardRoute);
             }
+        }
+
+        /// <summary>Hot-swaps the active guard personality profile mid-run without resetting positions.</summary>
+        public void SetProfile(GuardProfile profile)
+        {
+            if (profile == null)
+            {
+                throw new ArgumentNullException(nameof(profile));
+            }
+
+            _profile = profile;
+        }
+
+        /// <summary>Emits a decoy coin acoustic wave at the nearest walkable tile to lure the guard.</summary>
+        public Vector2 TossDecoy(Vector2 target, float maxRadius = 7.5f)
+        {
+            var clampedX = Math.Clamp(target.x, 1.2f, MarketData.WidthTiles - 1.2f);
+            var clampedY = Math.Clamp(target.y, 1.2f, MarketData.HeightTiles - 1.2f);
+            var walk = MarketGrid.NearestWalkable(_grid, clampedX, clampedY);
+            var origin = walk.HasValue
+                ? new Vector2(walk.Value.X + 0.5f, walk.Value.Y + 0.5f)
+                : new Vector2(clampedX, clampedY);
+            EmitSound(origin.x, origin.y, maxRadius);
+            return origin;
         }
 
         /// <summary>Moves the player without walking, mirroring the browser debug teleport.</summary>
@@ -717,6 +782,18 @@ namespace HeistSim
                     input.Crouch,
                     _state.CamerasDisabled),
                 dt);
+
+            // Prevent passive RF tags in the bag from pinning Exposure at 100% forever when completely unseen:
+            // while hidden out of sight and not sprinting/tripping motion, heat must always cool down steadily.
+            if (!_visible && !motion && !(input.Sprint && moving))
+            {
+                var minCooldown = -(input.Crouch ? 0.09f : 0.055f) * dt;
+                if (detection > minCooldown)
+                {
+                    detection = minCooldown;
+                }
+            }
+
             _state.AddHeat(detection);
 
             if (_visible)
@@ -744,6 +821,18 @@ namespace HeistSim
                 sensedSound = new SoundEvent(new Vector2(heardI, heardJ), heardAge, 1f);
             }
 
+            // Recompute arrival flags fresh every tick so they never latch true across later investigations or returns.
+            var activeInvestigateTarget = sensedSound.HasValue
+                ? sensedSound.Value.Origin
+                : (_lastGuardIntent.Target ?? _lastSeenPos);
+            _arrivedAtTarget = _guardAction == GuardAction.Investigate
+                && activeInvestigateTarget.HasValue
+                && Distance(_guard, activeInvestigateTarget.Value) < 0.8f;
+
+            var activeReturnTarget = _guardRoute[_guardWp];
+            _atRouteStart = _guardAction == GuardAction.Return
+                && Distance(_guard, activeReturnTarget) < 0.85f;
+
             var percepts = new GuardPercepts(
                 tick,
                 _guard,
@@ -760,6 +849,7 @@ namespace HeistSim
                 _lostSightTicks,
                 _searchTicks,
                 (int)_hp);
+            _lastPercepts = percepts;
 
             if (_state.Tier >= 5 && guardSees && playerDistance < 2.4f)
             {
@@ -802,12 +892,17 @@ namespace HeistSim
 
             if (_arch == GuardArchitecture.Fsm)
             {
-                _fsm.Tick(percepts, prof);
+                var (intent, transition) = _fsm.Tick(percepts, prof);
+                _lastGuardIntent = intent;
+                _lastFsmTransition = transition;
                 _guardAction = _fsm.State;
             }
             else
             {
                 var result = _bt.Tick(percepts, prof);
+                _lastGuardIntent = result.Intent;
+                _lastBtTrace = result.Trace;
+                _lastBtAborted = result.AbortedNodes;
                 _guardAction = ActionOf(result.ActiveLeaf);
             }
 
@@ -841,17 +936,17 @@ namespace HeistSim
 
                     break;
                 case GuardAction.Investigate:
-                    var investigate = _lastSeenPos ?? new Vector2(13.5f, 13.5f);
+                    var investigate = _lastGuardIntent.Target ?? _lastSeenPos ?? _guardRoute[_guardWp];
                     gi = investigate.x;
                     gj = investigate.y;
-                    speed = prof.investigate_speed;
+                    speed = _lastGuardIntent.Speed > 0.01f ? _lastGuardIntent.Speed : prof.investigate_speed;
                     _arrivedAtTarget = Distance(_guard, investigate) < 0.8f;
                     break;
                 case GuardAction.Chase:
-                    var chase = _visible ? _player : _lastSeenPos ?? _player;
+                    var chase = _lastGuardIntent.Target ?? (_visible ? _player : _lastSeenPos ?? _player);
                     gi = chase.x;
                     gj = chase.y;
-                    speed = prof.chase_speed;
+                    speed = _lastGuardIntent.Speed > 0.01f ? _lastGuardIntent.Speed : prof.chase_speed;
                     _hp = Math.Min(100f, _hp + dt * 4f);
                     break;
                 case GuardAction.Attack:
@@ -865,10 +960,20 @@ namespace HeistSim
 
                     return false;
                 case GuardAction.Search:
-                    _guardAngle += dt * 2.5f;
+                    var searchTarget = _lastGuardIntent.Target ?? _lastSeenPos;
+                    if (searchTarget.HasValue && Distance(_guard, searchTarget.Value) > 0.75f)
+                    {
+                        gi = searchTarget.Value.x;
+                        gj = searchTarget.Value.y;
+                        speed = prof.investigate_speed;
+                        break;
+                    }
+
+                    // Once at the last-seen spot, sweep head side-to-side to check around corners
+                    _guardAngle += dt * 2.8f;
                     return false;
                 case GuardAction.Return:
-                    var start = _guardRoute[0];
+                    var start = _guardRoute[_guardWp];
                     gi = start.x;
                     gj = start.y;
                     speed = prof.patrol_speed;
@@ -881,9 +986,20 @@ namespace HeistSim
             var fdi = gi - _guard.x;
             var fdj = gj - _guard.y;
             var fd = MathF.Sqrt(fdi * fdi + fdj * fdj);
+            var prevGuard = _guard;
             if (!_frozenPatrol && fd > 0.08f && MoveToward(_guardNav, ref _guard, gi, gj, TileSpeed * speed * dt))
             {
-                _guardAngle = MathF.Atan2(fdj, fdi);
+                var stepDx = _guard.x - prevGuard.x;
+                var stepDy = _guard.y - prevGuard.y;
+                if (!MarketGrid.SameRoom((int)prevGuard.x, (int)prevGuard.y, (int)gi, (int)gj)
+                    && (stepDx * stepDx + stepDy * stepDy) > 1e-6f)
+                {
+                    _guardAngle = MathF.Atan2(stepDy, stepDx);
+                }
+                else
+                {
+                    _guardAngle = MathF.Atan2(fdj, fdi);
+                }
             }
 
             return false;
@@ -988,6 +1104,7 @@ namespace HeistSim
                 }
 
                 var step = TileSpeed
+                    * Math.Clamp(PlayerSpeedScale, 0.25f, 1.5f)
                     * (input.Sprint ? SprintMultiplier : 1f)
                     * (input.Crouch ? CrouchMultiplier : 1f)
                     * dt;
@@ -1156,10 +1273,14 @@ namespace HeistSim
                 return StartStealChannel(near.Loot) ? InteractOutcome.Started : InteractOutcome.BagFull;
             }
 
-            _targetI = near.Position.x;
-            _targetJ = near.Position.y;
-            _pendingStealId = near.Id;
-            return InteractOutcome.None;
+            // Never hijack the player into auto-running across the store when pressing E near the EAS exit gate
+            var easExit = ToVector(MarketData.EasGate.I, MarketData.EasGate.J);
+            if (Distance(_player, easExit) <= EasGateRadius + 0.8f)
+            {
+                return InteractOutcome.NoTarget;
+            }
+
+            return InteractOutcome.NoTarget;
         }
 
         private bool StartStealChannel(LootEntry loot)

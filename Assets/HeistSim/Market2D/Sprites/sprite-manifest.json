@@ -1,0 +1,1252 @@
+{
+  "scale": 2,
+  "tileWidthPx": 128,
+  "tileHeightPx": 64,
+  "pixelsPerUnit": 128,
+  "fixtures": {
+    "action-table__ne": {
+      "kind": "action-table",
+      "face": "ne",
+      "width": 318,
+      "height": 358,
+      "pivotX": 0.34591194968553457,
+      "pivotY": 0.4804469273743017,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/action-table__ne.png"
+    },
+    "action-table__nw": {
+      "kind": "action-table",
+      "face": "nw",
+      "width": 318,
+      "height": 358,
+      "pivotX": 0.5408805031446541,
+      "pivotY": 0.4804469273743017,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/action-table__nw.png"
+    },
+    "aisle-sign__ne": {
+      "kind": "aisle-sign",
+      "face": "ne",
+      "width": 184,
+      "height": 308,
+      "pivotX": 0.45652173913043476,
+      "pivotY": 0.20779220779220775,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/aisle-sign__ne.png"
+    },
+    "aisle-sign__nw": {
+      "kind": "aisle-sign",
+      "face": "nw",
+      "width": 184,
+      "height": 308,
+      "pivotX": 0.45652173913043476,
+      "pivotY": 0.20779220779220775,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/aisle-sign__nw.png"
+    },
+    "apple-crate__ne": {
+      "kind": "apple-crate",
+      "face": "ne",
+      "width": 200,
+      "height": 214,
+      "pivotX": 0.39,
+      "pivotY": 0.514018691588785,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/apple-crate__ne.png"
+    },
+    "apple-crate__nw": {
+      "kind": "apple-crate",
+      "face": "nw",
+      "width": 200,
+      "height": 214,
+      "pivotX": 0.47,
+      "pivotY": 0.514018691588785,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/apple-crate__nw.png"
+    },
+    "bakery-rack__ne": {
+      "kind": "bakery-rack",
+      "face": "ne",
+      "width": 296,
+      "height": 364,
+      "pivotX": 0.3108108108108108,
+      "pivotY": 0.46153846153846156,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/bakery-rack__ne.png"
+    },
+    "bakery-rack__nw": {
+      "kind": "bakery-rack",
+      "face": "nw",
+      "width": 296,
+      "height": 364,
+      "pivotX": 0.5540540540540541,
+      "pivotY": 0.46153846153846156,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/bakery-rack__nw.png"
+    },
+    "beverage-shelf__ne": {
+      "kind": "beverage-shelf",
+      "face": "ne",
+      "width": 310,
+      "height": 364,
+      "pivotX": 0.2967741935483871,
+      "pivotY": 0.4560439560439561,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/beverage-shelf__ne.png"
+    },
+    "beverage-shelf__nw": {
+      "kind": "beverage-shelf",
+      "face": "nw",
+      "width": 310,
+      "height": 364,
+      "pivotX": 0.5741935483870968,
+      "pivotY": 0.4560439560439561,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/beverage-shelf__nw.png"
+    },
+    "bistro-counter__ne": {
+      "kind": "bistro-counter",
+      "face": "ne",
+      "width": 278,
+      "height": 332,
+      "pivotX": 0.3381294964028777,
+      "pivotY": 0.4698795180722891,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/bistro-counter__ne.png"
+    },
+    "bistro-counter__nw": {
+      "kind": "bistro-counter",
+      "face": "nw",
+      "width": 278,
+      "height": 332,
+      "pivotX": 0.5467625899280576,
+      "pivotY": 0.4698795180722891,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/bistro-counter__nw.png"
+    },
+    "checkout-lane__ne": {
+      "kind": "checkout-lane",
+      "face": "ne",
+      "width": 348,
+      "height": 380,
+      "pivotX": 0.28735632183908044,
+      "pivotY": 0.4842105263157894,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/checkout-lane__ne.png"
+    },
+    "checkout-lane__nw": {
+      "kind": "checkout-lane",
+      "face": "nw",
+      "width": 348,
+      "height": 380,
+      "pivotX": 0.5862068965517241,
+      "pivotY": 0.4842105263157894,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/checkout-lane__nw.png"
+    },
+    "chilled-case__ne": {
+      "kind": "chilled-case",
+      "face": "ne",
+      "width": 338,
+      "height": 406,
+      "pivotX": 0.2781065088757396,
+      "pivotY": 0.4778325123152709,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/chilled-case__ne.png"
+    },
+    "chilled-case__nw": {
+      "kind": "chilled-case",
+      "face": "nw",
+      "width": 338,
+      "height": 406,
+      "pivotX": 0.5798816568047337,
+      "pivotY": 0.4778325123152709,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/chilled-case__nw.png"
+    },
+    "coffee-counter__ne": {
+      "kind": "coffee-counter",
+      "face": "ne",
+      "width": 238,
+      "height": 310,
+      "pivotX": 0.3697478991596639,
+      "pivotY": 0.41290322580645167,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/coffee-counter__ne.png"
+    },
+    "coffee-counter__nw": {
+      "kind": "coffee-counter",
+      "face": "nw",
+      "width": 238,
+      "height": 310,
+      "pivotX": 0.5294117647058824,
+      "pivotY": 0.41290322580645167,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/coffee-counter__nw.png"
+    },
+    "crate-tower__ne": {
+      "kind": "crate-tower",
+      "face": "ne",
+      "width": 260,
+      "height": 326,
+      "pivotX": 0.4307692307692308,
+      "pivotY": 0.4233128834355828,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/crate-tower__ne.png"
+    },
+    "crate-tower__nw": {
+      "kind": "crate-tower",
+      "face": "nw",
+      "width": 260,
+      "height": 326,
+      "pivotX": 0.47692307692307695,
+      "pivotY": 0.4233128834355828,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/crate-tower__nw.png"
+    },
+    "deli-counter__ne": {
+      "kind": "deli-counter",
+      "face": "ne",
+      "width": 278,
+      "height": 330,
+      "pivotX": 0.3381294964028777,
+      "pivotY": 0.4606060606060606,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/deli-counter__ne.png"
+    },
+    "deli-counter__nw": {
+      "kind": "deli-counter",
+      "face": "nw",
+      "width": 278,
+      "height": 330,
+      "pivotX": 0.5467625899280576,
+      "pivotY": 0.4606060606060606,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/deli-counter__nw.png"
+    },
+    "dump-bin__ne": {
+      "kind": "dump-bin",
+      "face": "ne",
+      "width": 248,
+      "height": 282,
+      "pivotX": 0.3790322580645161,
+      "pivotY": 0.46099290780141844,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/dump-bin__ne.png"
+    },
+    "dump-bin__nw": {
+      "kind": "dump-bin",
+      "face": "nw",
+      "width": 248,
+      "height": 282,
+      "pivotX": 0.5080645161290323,
+      "pivotY": 0.46099290780141844,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/dump-bin__nw.png"
+    },
+    "eas-gate__ne": {
+      "kind": "eas-gate",
+      "face": "ne",
+      "width": 234,
+      "height": 306,
+      "pivotX": 0.5982905982905983,
+      "pivotY": 0.43137254901960786,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/eas-gate__ne.png"
+    },
+    "eas-gate__nw": {
+      "kind": "eas-gate",
+      "face": "nw",
+      "width": 234,
+      "height": 306,
+      "pivotX": 0.26495726495726496,
+      "pivotY": 0.43137254901960786,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/eas-gate__nw.png"
+    },
+    "floral-stand__ne": {
+      "kind": "floral-stand",
+      "face": "ne",
+      "width": 208,
+      "height": 292,
+      "pivotX": 0.4423076923076923,
+      "pivotY": 0.3835616438356164,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/floral-stand__ne.png"
+    },
+    "floral-stand__nw": {
+      "kind": "floral-stand",
+      "face": "nw",
+      "width": 208,
+      "height": 292,
+      "pivotX": 0.4423076923076923,
+      "pivotY": 0.3835616438356164,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/floral-stand__nw.png"
+    },
+    "freezer-chest__ne": {
+      "kind": "freezer-chest",
+      "face": "ne",
+      "width": 266,
+      "height": 284,
+      "pivotX": 0.3684210526315789,
+      "pivotY": 0.5,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/freezer-chest__ne.png"
+    },
+    "freezer-chest__nw": {
+      "kind": "freezer-chest",
+      "face": "nw",
+      "width": 266,
+      "height": 284,
+      "pivotX": 0.5263157894736842,
+      "pivotY": 0.5,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/freezer-chest__nw.png"
+    },
+    "freezer-wall__ne": {
+      "kind": "freezer-wall",
+      "face": "ne",
+      "width": 312,
+      "height": 372,
+      "pivotX": 0.26282051282051283,
+      "pivotY": 0.4301075268817204,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/freezer-wall__ne.png"
+    },
+    "freezer-wall__nw": {
+      "kind": "freezer-wall",
+      "face": "nw",
+      "width": 312,
+      "height": 372,
+      "pivotX": 0.6089743589743589,
+      "pivotY": 0.4301075268817204,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/freezer-wall__nw.png"
+    },
+    "gondola-shelf__ne": {
+      "kind": "gondola-shelf",
+      "face": "ne",
+      "width": 360,
+      "height": 396,
+      "pivotX": 0.26666666666666666,
+      "pivotY": 0.505050505050505,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/gondola-shelf__ne.png"
+    },
+    "gondola-shelf__nw": {
+      "kind": "gondola-shelf",
+      "face": "nw",
+      "width": 360,
+      "height": 396,
+      "pivotX": 0.6,
+      "pivotY": 0.505050505050505,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/gondola-shelf__nw.png"
+    },
+    "hand-basket__ne": {
+      "kind": "hand-basket",
+      "face": "ne",
+      "width": 174,
+      "height": 196,
+      "pivotX": 0.39080459770114945,
+      "pivotY": 0.4897959183673469,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/hand-basket__ne.png"
+    },
+    "hand-basket__nw": {
+      "kind": "hand-basket",
+      "face": "nw",
+      "width": 174,
+      "height": 196,
+      "pivotX": 0.47126436781609193,
+      "pivotY": 0.4897959183673469,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/hand-basket__nw.png"
+    },
+    "hand-wash__ne": {
+      "kind": "hand-wash",
+      "face": "ne",
+      "width": 182,
+      "height": 282,
+      "pivotX": 0.4175824175824176,
+      "pivotY": 0.34751773049645385,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/hand-wash__ne.png"
+    },
+    "hand-wash__nw": {
+      "kind": "hand-wash",
+      "face": "nw",
+      "width": 182,
+      "height": 282,
+      "pivotX": 0.45054945054945056,
+      "pivotY": 0.34751773049645385,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/hand-wash__nw.png"
+    },
+    "impulse-shelf__ne": {
+      "kind": "impulse-shelf",
+      "face": "ne",
+      "width": 184,
+      "height": 254,
+      "pivotX": 0.358695652173913,
+      "pivotY": 0.39370078740157477,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/impulse-shelf__ne.png"
+    },
+    "impulse-shelf__nw": {
+      "kind": "impulse-shelf",
+      "face": "nw",
+      "width": 184,
+      "height": 254,
+      "pivotX": 0.5108695652173914,
+      "pivotY": 0.39370078740157477,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/impulse-shelf__nw.png"
+    },
+    "liquor-cabinet__ne": {
+      "kind": "liquor-cabinet",
+      "face": "ne",
+      "width": 280,
+      "height": 384,
+      "pivotX": 0.3,
+      "pivotY": 0.42708333333333337,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/liquor-cabinet__ne.png"
+    },
+    "liquor-cabinet__nw": {
+      "kind": "liquor-cabinet",
+      "face": "nw",
+      "width": 280,
+      "height": 384,
+      "pivotX": 0.5428571428571428,
+      "pivotY": 0.42708333333333337,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/liquor-cabinet__nw.png"
+    },
+    "pallet-cage__ne": {
+      "kind": "pallet-cage",
+      "face": "ne",
+      "width": 260,
+      "height": 332,
+      "pivotX": 0.45384615384615384,
+      "pivotY": 0.4156626506024096,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/pallet-cage__ne.png"
+    },
+    "pallet-cage__nw": {
+      "kind": "pallet-cage",
+      "face": "nw",
+      "width": 260,
+      "height": 332,
+      "pivotX": 0.45384615384615384,
+      "pivotY": 0.4156626506024096,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/pallet-cage__nw.png"
+    },
+    "pallet-stack__ne": {
+      "kind": "pallet-stack",
+      "face": "ne",
+      "width": 260,
+      "height": 294,
+      "pivotX": 0.4153846153846154,
+      "pivotY": 0.48299319727891155,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/pallet-stack__ne.png"
+    },
+    "pallet-stack__nw": {
+      "kind": "pallet-stack",
+      "face": "nw",
+      "width": 260,
+      "height": 294,
+      "pivotX": 0.46153846153846156,
+      "pivotY": 0.48299319727891155,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/pallet-stack__nw.png"
+    },
+    "pfand-machine__ne": {
+      "kind": "pfand-machine",
+      "face": "ne",
+      "width": 238,
+      "height": 334,
+      "pivotX": 0.3697478991596639,
+      "pivotY": 0.40718562874251496,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/pfand-machine__ne.png"
+    },
+    "pfand-machine__nw": {
+      "kind": "pfand-machine",
+      "face": "nw",
+      "width": 238,
+      "height": 334,
+      "pivotX": 0.4789915966386555,
+      "pivotY": 0.40718562874251496,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/pfand-machine__nw.png"
+    },
+    "produce-island__ne": {
+      "kind": "produce-island",
+      "face": "ne",
+      "width": 310,
+      "height": 302,
+      "pivotX": 0.3741935483870968,
+      "pivotY": 0.5496688741721854,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/produce-island__ne.png"
+    },
+    "produce-island__nw": {
+      "kind": "produce-island",
+      "face": "nw",
+      "width": 310,
+      "height": 302,
+      "pivotX": 0.5096774193548387,
+      "pivotY": 0.5496688741721854,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/produce-island__nw.png"
+    },
+    "rewe-arch__ne": {
+      "kind": "rewe-arch",
+      "face": "ne",
+      "width": 320,
+      "height": 436,
+      "pivotX": 0.2625,
+      "pivotY": 0.37614678899082565,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/rewe-arch__ne.png"
+    },
+    "rewe-arch__nw": {
+      "kind": "rewe-arch",
+      "face": "nw",
+      "width": 320,
+      "height": 436,
+      "pivotX": 0.6875,
+      "pivotY": 0.37614678899082565,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/rewe-arch__nw.png"
+    },
+    "seasonal-display__ne": {
+      "kind": "seasonal-display",
+      "face": "ne",
+      "width": 298,
+      "height": 322,
+      "pivotX": 0.3959731543624161,
+      "pivotY": 0.484472049689441,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/seasonal-display__ne.png"
+    },
+    "seasonal-display__nw": {
+      "kind": "seasonal-display",
+      "face": "nw",
+      "width": 298,
+      "height": 322,
+      "pivotX": 0.5234899328859061,
+      "pivotY": 0.484472049689441,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/seasonal-display__nw.png"
+    },
+    "self-checkout__ne": {
+      "kind": "self-checkout",
+      "face": "ne",
+      "width": 234,
+      "height": 330,
+      "pivotX": 0.4188034188034188,
+      "pivotY": 0.38181818181818183,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/self-checkout__ne.png"
+    },
+    "self-checkout__nw": {
+      "kind": "self-checkout",
+      "face": "nw",
+      "width": 234,
+      "height": 330,
+      "pivotX": 0.46153846153846156,
+      "pivotY": 0.38181818181818183,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/self-checkout__nw.png"
+    },
+    "server-rack__ne": {
+      "kind": "server-rack",
+      "face": "ne",
+      "width": 188,
+      "height": 262,
+      "pivotX": 0.40425531914893614,
+      "pivotY": 0.3893129770992366,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/server-rack__ne.png"
+    },
+    "server-rack__nw": {
+      "kind": "server-rack",
+      "face": "nw",
+      "width": 188,
+      "height": 262,
+      "pivotX": 0.46808510638297873,
+      "pivotY": 0.3893129770992366,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/server-rack__nw.png"
+    },
+    "service-counter__ne": {
+      "kind": "service-counter",
+      "face": "ne",
+      "width": 294,
+      "height": 340,
+      "pivotX": 0.3197278911564626,
+      "pivotY": 0.4647058823529412,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/service-counter__ne.png"
+    },
+    "service-counter__nw": {
+      "kind": "service-counter",
+      "face": "nw",
+      "width": 294,
+      "height": 340,
+      "pivotX": 0.5578231292517006,
+      "pivotY": 0.4647058823529412,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/service-counter__nw.png"
+    },
+    "shopping-cart__ne": {
+      "kind": "shopping-cart",
+      "face": "ne",
+      "width": 284,
+      "height": 300,
+      "pivotX": 0.49295774647887325,
+      "pivotY": 0.52,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/shopping-cart__ne.png"
+    },
+    "shopping-cart__nw": {
+      "kind": "shopping-cart",
+      "face": "nw",
+      "width": 284,
+      "height": 300,
+      "pivotX": 0.38028169014084506,
+      "pivotY": 0.52,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/shopping-cart__nw.png"
+    },
+    "store-sign__ne": {
+      "kind": "store-sign",
+      "face": "ne",
+      "width": 212,
+      "height": 188,
+      "pivotX": 0.2641509433962264,
+      "pivotY": 0.5851063829787234,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/store-sign__ne.png"
+    },
+    "store-sign__nw": {
+      "kind": "store-sign",
+      "face": "nw",
+      "width": 212,
+      "height": 188,
+      "pivotX": 0.660377358490566,
+      "pivotY": 0.5851063829787234,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/store-sign__nw.png"
+    },
+    "wine-rack__ne": {
+      "kind": "wine-rack",
+      "face": "ne",
+      "width": 244,
+      "height": 338,
+      "pivotX": 0.3114754098360656,
+      "pivotY": 0.3905325443786982,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/wine-rack__ne.png"
+    },
+    "wine-rack__nw": {
+      "kind": "wine-rack",
+      "face": "nw",
+      "width": 244,
+      "height": 338,
+      "pivotX": 0.5737704918032787,
+      "pivotY": 0.3905325443786982,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/wine-rack__nw.png"
+    }
+  },
+  "rooms": {
+    "r1": {
+      "room": "r1",
+      "at": [
+        0,
+        0
+      ],
+      "width": 1296,
+      "height": 938,
+      "pivotX": 0.5,
+      "pivotY": 0.6921108742004265,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Rooms/r1.png"
+    },
+    "r2": {
+      "room": "r2",
+      "at": [
+        1,
+        0
+      ],
+      "width": 1296,
+      "height": 938,
+      "pivotX": 0.5,
+      "pivotY": 0.6921108742004265,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Rooms/r2.png"
+    },
+    "r3": {
+      "room": "r3",
+      "at": [
+        2,
+        0
+      ],
+      "width": 1296,
+      "height": 938,
+      "pivotX": 0.5,
+      "pivotY": 0.6921108742004265,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Rooms/r3.png"
+    },
+    "r4": {
+      "room": "r4",
+      "at": [
+        0,
+        1
+      ],
+      "width": 1296,
+      "height": 938,
+      "pivotX": 0.5,
+      "pivotY": 0.6921108742004265,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Rooms/r4.png"
+    },
+    "r5": {
+      "room": "r5",
+      "at": [
+        1,
+        1
+      ],
+      "width": 1296,
+      "height": 938,
+      "pivotX": 0.5,
+      "pivotY": 0.6921108742004265,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Rooms/r5.png"
+    },
+    "r6": {
+      "room": "r6",
+      "at": [
+        3,
+        2
+      ],
+      "width": 1296,
+      "height": 938,
+      "pivotX": 0.5,
+      "pivotY": 0.6921108742004265,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Rooms/r6.png"
+    },
+    "r7": {
+      "room": "r7",
+      "at": [
+        3,
+        0
+      ],
+      "width": 1296,
+      "height": 938,
+      "pivotX": 0.5,
+      "pivotY": 0.6921108742004265,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Rooms/r7.png"
+    },
+    "r8": {
+      "room": "r8",
+      "at": [
+        3,
+        1
+      ],
+      "width": 1296,
+      "height": 938,
+      "pivotX": 0.5,
+      "pivotY": 0.6921108742004265,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Rooms/r8.png"
+    },
+    "r9": {
+      "room": "r9",
+      "at": [
+        0,
+        2
+      ],
+      "width": 1296,
+      "height": 938,
+      "pivotX": 0.5,
+      "pivotY": 0.6921108742004265,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Rooms/r9.png"
+    },
+    "r10": {
+      "room": "r10",
+      "at": [
+        1,
+        2
+      ],
+      "width": 1296,
+      "height": 938,
+      "pivotX": 0.5,
+      "pivotY": 0.6921108742004265,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Rooms/r10.png"
+    },
+    "r11": {
+      "room": "r11",
+      "at": [
+        2,
+        2
+      ],
+      "width": 1296,
+      "height": 938,
+      "pivotX": 0.5,
+      "pivotY": 0.6921108742004265,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Rooms/r11.png"
+    },
+    "r12": {
+      "room": "r12",
+      "at": [
+        2,
+        1
+      ],
+      "width": 1296,
+      "height": 938,
+      "pivotX": 0.5,
+      "pivotY": 0.6921108742004265,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Rooms/r12.png"
+    }
+  },
+  "actors": {
+    "player": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/player.png"
+    },
+    "player_walk1": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/player_walk1.png"
+    },
+    "player_walk2": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/player_walk2.png"
+    },
+    "player_crouch": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/player_crouch.png"
+    },
+    "player_crouch_walk1": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/player_crouch_walk1.png"
+    },
+    "player_crouch_walk2": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/player_crouch_walk2.png"
+    },
+    "guard": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/guard.png"
+    },
+    "guard_walk1": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/guard_walk1.png"
+    },
+    "guard_walk2": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/guard_walk2.png"
+    },
+    "staff": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/staff.png"
+    },
+    "staff_walk1": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/staff_walk1.png"
+    },
+    "staff_walk2": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/staff_walk2.png"
+    },
+    "cctv": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/cctv.png"
+    },
+    "bubble_alert": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/bubble_alert.png"
+    },
+    "bubble_question": {
+      "width": 144,
+      "height": 184,
+      "pivotX": 0.5,
+      "pivotY": 0.21739130434782605,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Actors/bubble_question.png"
+    }
+  },
+  "emptyFixtures": {
+    "action-table__ne__empty": {
+      "kind": "action-table",
+      "face": "ne",
+      "width": 318,
+      "height": 358,
+      "pivotX": 0.34591194968553457,
+      "pivotY": 0.4804469273743017,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/action-table__ne__empty.png"
+    },
+    "action-table__nw__empty": {
+      "kind": "action-table",
+      "face": "nw",
+      "width": 318,
+      "height": 358,
+      "pivotX": 0.5408805031446541,
+      "pivotY": 0.4804469273743017,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/action-table__nw__empty.png"
+    },
+    "checkout-lane__ne__empty": {
+      "kind": "checkout-lane",
+      "face": "ne",
+      "width": 348,
+      "height": 380,
+      "pivotX": 0.28735632183908044,
+      "pivotY": 0.4842105263157894,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/checkout-lane__ne__empty.png"
+    },
+    "checkout-lane__nw__empty": {
+      "kind": "checkout-lane",
+      "face": "nw",
+      "width": 348,
+      "height": 380,
+      "pivotX": 0.5862068965517241,
+      "pivotY": 0.4842105263157894,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/checkout-lane__nw__empty.png"
+    },
+    "chilled-case__ne__empty": {
+      "kind": "chilled-case",
+      "face": "ne",
+      "width": 338,
+      "height": 406,
+      "pivotX": 0.2781065088757396,
+      "pivotY": 0.4778325123152709,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/chilled-case__ne__empty.png"
+    },
+    "chilled-case__nw__empty": {
+      "kind": "chilled-case",
+      "face": "nw",
+      "width": 338,
+      "height": 406,
+      "pivotX": 0.5798816568047337,
+      "pivotY": 0.4778325123152709,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/chilled-case__nw__empty.png"
+    },
+    "crate-tower__ne__empty": {
+      "kind": "crate-tower",
+      "face": "ne",
+      "width": 260,
+      "height": 326,
+      "pivotX": 0.4307692307692308,
+      "pivotY": 0.4233128834355828,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/crate-tower__ne__empty.png"
+    },
+    "crate-tower__nw__empty": {
+      "kind": "crate-tower",
+      "face": "nw",
+      "width": 260,
+      "height": 326,
+      "pivotX": 0.47692307692307695,
+      "pivotY": 0.4233128834355828,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/crate-tower__nw__empty.png"
+    },
+    "deli-counter__ne__empty": {
+      "kind": "deli-counter",
+      "face": "ne",
+      "width": 278,
+      "height": 330,
+      "pivotX": 0.3381294964028777,
+      "pivotY": 0.4606060606060606,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/deli-counter__ne__empty.png"
+    },
+    "deli-counter__nw__empty": {
+      "kind": "deli-counter",
+      "face": "nw",
+      "width": 278,
+      "height": 330,
+      "pivotX": 0.5467625899280576,
+      "pivotY": 0.4606060606060606,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/deli-counter__nw__empty.png"
+    },
+    "freezer-wall__ne__empty": {
+      "kind": "freezer-wall",
+      "face": "ne",
+      "width": 312,
+      "height": 372,
+      "pivotX": 0.26282051282051283,
+      "pivotY": 0.4301075268817204,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/freezer-wall__ne__empty.png"
+    },
+    "freezer-wall__nw__empty": {
+      "kind": "freezer-wall",
+      "face": "nw",
+      "width": 312,
+      "height": 372,
+      "pivotX": 0.6089743589743589,
+      "pivotY": 0.4301075268817204,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/freezer-wall__nw__empty.png"
+    },
+    "gondola-shelf__ne__empty": {
+      "kind": "gondola-shelf",
+      "face": "ne",
+      "width": 360,
+      "height": 396,
+      "pivotX": 0.26666666666666666,
+      "pivotY": 0.505050505050505,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/gondola-shelf__ne__empty.png"
+    },
+    "gondola-shelf__nw__empty": {
+      "kind": "gondola-shelf",
+      "face": "nw",
+      "width": 360,
+      "height": 396,
+      "pivotX": 0.6,
+      "pivotY": 0.505050505050505,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/gondola-shelf__nw__empty.png"
+    },
+    "liquor-cabinet__ne__empty": {
+      "kind": "liquor-cabinet",
+      "face": "ne",
+      "width": 280,
+      "height": 384,
+      "pivotX": 0.3,
+      "pivotY": 0.42708333333333337,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/liquor-cabinet__ne__empty.png"
+    },
+    "liquor-cabinet__nw__empty": {
+      "kind": "liquor-cabinet",
+      "face": "nw",
+      "width": 280,
+      "height": 384,
+      "pivotX": 0.5428571428571428,
+      "pivotY": 0.42708333333333337,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/liquor-cabinet__nw__empty.png"
+    },
+    "pallet-cage__ne__empty": {
+      "kind": "pallet-cage",
+      "face": "ne",
+      "width": 260,
+      "height": 332,
+      "pivotX": 0.45384615384615384,
+      "pivotY": 0.4156626506024096,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/pallet-cage__ne__empty.png"
+    },
+    "pallet-cage__nw__empty": {
+      "kind": "pallet-cage",
+      "face": "nw",
+      "width": 260,
+      "height": 332,
+      "pivotX": 0.45384615384615384,
+      "pivotY": 0.4156626506024096,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/pallet-cage__nw__empty.png"
+    },
+    "pallet-stack__ne__empty": {
+      "kind": "pallet-stack",
+      "face": "ne",
+      "width": 260,
+      "height": 294,
+      "pivotX": 0.4153846153846154,
+      "pivotY": 0.48299319727891155,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/pallet-stack__ne__empty.png"
+    },
+    "pallet-stack__nw__empty": {
+      "kind": "pallet-stack",
+      "face": "nw",
+      "width": 260,
+      "height": 294,
+      "pivotX": 0.46153846153846156,
+      "pivotY": 0.48299319727891155,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/pallet-stack__nw__empty.png"
+    },
+    "produce-island__ne__empty": {
+      "kind": "produce-island",
+      "face": "ne",
+      "width": 310,
+      "height": 302,
+      "pivotX": 0.3741935483870968,
+      "pivotY": 0.5496688741721854,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/produce-island__ne__empty.png"
+    },
+    "produce-island__nw__empty": {
+      "kind": "produce-island",
+      "face": "nw",
+      "width": 310,
+      "height": 302,
+      "pivotX": 0.5096774193548387,
+      "pivotY": 0.5496688741721854,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/produce-island__nw__empty.png"
+    },
+    "seasonal-display__ne__empty": {
+      "kind": "seasonal-display",
+      "face": "ne",
+      "width": 298,
+      "height": 322,
+      "pivotX": 0.3959731543624161,
+      "pivotY": 0.484472049689441,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/seasonal-display__ne__empty.png"
+    },
+    "seasonal-display__nw__empty": {
+      "kind": "seasonal-display",
+      "face": "nw",
+      "width": 298,
+      "height": 322,
+      "pivotX": 0.5234899328859061,
+      "pivotY": 0.484472049689441,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/seasonal-display__nw__empty.png"
+    },
+    "wine-rack__ne__empty": {
+      "kind": "wine-rack",
+      "face": "ne",
+      "width": 244,
+      "height": 338,
+      "pivotX": 0.3114754098360656,
+      "pivotY": 0.3905325443786982,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/wine-rack__ne__empty.png"
+    },
+    "wine-rack__nw__empty": {
+      "kind": "wine-rack",
+      "face": "nw",
+      "width": 244,
+      "height": 338,
+      "pivotX": 0.5737704918032787,
+      "pivotY": 0.3905325443786982,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/wine-rack__nw__empty.png"
+    },
+    "liquor-cabinet__ne__open": {
+      "kind": "liquor-cabinet",
+      "face": "ne",
+      "width": 280,
+      "height": 384,
+      "pivotX": 0.3,
+      "pivotY": 0.42708333333333337,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/liquor-cabinet__ne__open.png"
+    },
+    "liquor-cabinet__nw__open": {
+      "kind": "liquor-cabinet",
+      "face": "nw",
+      "width": 280,
+      "height": 384,
+      "pivotX": 0.5428571428571428,
+      "pivotY": 0.42708333333333337,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Fixtures/liquor-cabinet__nw__open.png"
+    }
+  },
+  "lowWalls": {
+    "lowwall_ne": {
+      "side": "ne",
+      "length": 3.55,
+      "width": 294,
+      "height": 230,
+      "pivotX": 0.11564625850340136,
+      "pivotY": 0.6260869565217391,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Rooms/lowwall_ne.png"
+    },
+    "lowwall_nw": {
+      "side": "nw",
+      "length": 3.55,
+      "width": 294,
+      "height": 230,
+      "pivotX": 0.8843537414965986,
+      "pivotY": 0.6260869565217391,
+      "pixelsPerUnit": 128.0,
+      "path": "Assets/HeistSim/Market2D/Sprites/Rooms/lowwall_nw.png"
+    }
+  }
+}

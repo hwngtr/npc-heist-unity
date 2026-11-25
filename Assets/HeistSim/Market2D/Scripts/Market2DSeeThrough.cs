@@ -14,14 +14,18 @@ namespace HeistSim.Market2D
     }
 
     /// <summary>
-    /// Keeps the thief readable when sneaking behind tall isometric supermarket fixtures
-    /// by easing a per-fixture Bayer 4x4 dithered cutout (or opacity fade) in RisoSpriteHighlight.shader.
+    /// Keeps the thief and NPCs readable when walking behind isometric low walls or tall
+    /// fixtures by resolving front/back sorting order and easing per-actor Bayer 4x4 dithered
+    /// cutouts (up to 4 simultaneous characters) in RisoSpriteHighlight.shader.
     /// Uses MaterialPropertyBlock so sprite batching and existing loot highlights remain intact.
     /// </summary>
     public sealed class Market2DSeeThrough : MonoBehaviour
     {
         private static readonly int AmountId = Shader.PropertyToID("_SeeThroughAmount");
         private static readonly int TargetId = Shader.PropertyToID("_SeeThroughTarget");
+        private static readonly int Target1Id = Shader.PropertyToID("_SeeThroughTarget1");
+        private static readonly int Target2Id = Shader.PropertyToID("_SeeThroughTarget2");
+        private static readonly int Target3Id = Shader.PropertyToID("_SeeThroughTarget3");
         private static readonly int RadiusId = Shader.PropertyToID("_SeeThroughRadius");
         private static readonly int SoftId = Shader.PropertyToID("_SeeThroughSoft");
         private static readonly int KeepId = Shader.PropertyToID("_SeeThroughKeep");
@@ -60,29 +64,82 @@ namespace HeistSim.Market2D
         /// <summary>Character half-extents used for occlusion overlap checks.</summary>
         public Vector2 actorBoxSize = new(0.46f, 0.72f);
 
-        private sealed class TrackedFixture
+        /// <summary>Snapshot of one actor passed to Market2DSeeThrough each frame.</summary>
+        public readonly struct SeeThroughActor
+        {
+            /// <summary>True when tile coordinates are valid for dynamic wall/fixture front-back sorting.</summary>
+            public readonly bool HasTilePos;
+
+            /// <summary>Continuous map tile position (i, j) used for exact isometric depth comparison.</summary>
+            public readonly Vector2 TilePos;
+
+            /// <summary>Actor feet position in Unity world space.</summary>
+            public readonly Vector3 FeetWorld;
+
+            /// <summary>Actor sprite sortingOrder for this frame.</summary>
+            public readonly int SortingOrder;
+
+            /// <summary>Creates an actor sample with authoritative tile coordinates.</summary>
+            public SeeThroughActor(Vector2 tilePos, Vector3 feetWorld, int sortingOrder)
+            {
+                HasTilePos = true;
+                TilePos = tilePos;
+                FeetWorld = feetWorld;
+                SortingOrder = sortingOrder;
+            }
+
+            /// <summary>Creates a legacy actor sample without tile coordinates.</summary>
+            public SeeThroughActor(Vector3 feetWorld, int sortingOrder)
+            {
+                HasTilePos = false;
+                TilePos = Vector2.zero;
+                FeetWorld = feetWorld;
+                SortingOrder = sortingOrder;
+            }
+        }
+
+        private const int MaxSeeThroughActors = 4;
+
+        private sealed class TrackedOccluder
         {
             public SpriteRenderer Renderer;
-            public float Amount;
+            public Iso2DOccluderBounds Bounds;
+            public readonly float[] Amounts = new float[MaxSeeThroughActors];
             public bool Dirty;
         }
 
-        private readonly List<TrackedFixture> _fixtures = new();
+        private readonly List<TrackedOccluder> _occluders = new();
+        private readonly SeeThroughActor[] _singleActorScratch = new SeeThroughActor[1];
+        private readonly Vector2[] _targetCentersScratch = new Vector2[MaxSeeThroughActors];
+        private readonly Rect[] _actorRectsScratch = new Rect[MaxSeeThroughActors];
+        private readonly bool[] _occludingScratch = new bool[MaxSeeThroughActors];
         private MaterialPropertyBlock _mpb;
 
-        /// <summary>Number of tracked occluding fixtures.</summary>
-        public int TrackedCount => _fixtures.Count;
+        /// <summary>Number of tracked occluding fixtures and wall segments.</summary>
+        public int TrackedCount => _occluders.Count;
 
-        /// <summary>Collects all fixture SpriteRenderers under fixturesRoot.</summary>
+        /// <summary>Collects all occluding fixture SpriteRenderers under fixturesRoot.</summary>
         public void BindFixtures(Transform fixturesRoot)
         {
-            _fixtures.Clear();
-            if (fixturesRoot == null)
+            BindOccluders(fixturesRoot, null);
+        }
+
+        /// <summary>Collects all tall fixture and LowWall SpriteRenderers that can occlude actors.</summary>
+        public void BindOccluders(Transform fixturesRoot, Transform lowWallsRoot)
+        {
+            _occluders.Clear();
+            AddOccludersFromRoot(fixturesRoot, includeShortWithoutBounds: false);
+            AddOccludersFromRoot(lowWallsRoot, includeShortWithoutBounds: true);
+        }
+
+        private void AddOccludersFromRoot(Transform root, bool includeShortWithoutBounds)
+        {
+            if (root == null)
             {
                 return;
             }
 
-            var renderers = fixturesRoot.GetComponentsInChildren<SpriteRenderer>(true);
+            var renderers = root.GetComponentsInChildren<SpriteRenderer>(true);
             for (var i = 0; i < renderers.Length; i++)
             {
                 var sr = renderers[i];
@@ -91,46 +148,137 @@ namespace HeistSim.Market2D
                     continue;
                 }
 
-                // Skip floor-flat or tiny props; tall shelves & cases occlude the thief
-                if (sr.bounds.size.y < 0.75f)
+                var bounds = sr.GetComponent<Iso2DOccluderBounds>();
+                if (!includeShortWithoutBounds && bounds == null && sr.bounds.size.y < 0.75f)
                 {
                     continue;
                 }
 
-                _fixtures.Add(new TrackedFixture { Renderer = sr, Amount = 0f, Dirty = true });
+                _occluders.Add(new TrackedOccluder
+                {
+                    Renderer = sr,
+                    Bounds = bounds,
+                    Dirty = true,
+                });
             }
         }
 
-        /// <summary>Updates per-fixture see-through amounts based on actor world position and depth sorting order.</summary>
+        /// <summary>Updates per-fixture see-through amounts for a single actor.</summary>
         public void Step(Vector3 actorFeetWorld, int actorSortingOrder, float dt)
         {
-            _mpb ??= new MaterialPropertyBlock();
-            var actorCenter = new Vector2(actorFeetWorld.x, actorFeetWorld.y + actorBoxSize.y * 0.48f);
-            var actorRect = new Rect(
-                actorCenter.x - actorBoxSize.x * 0.5f,
-                actorFeetWorld.y,
-                actorBoxSize.x,
-                actorBoxSize.y);
+            _singleActorScratch[0] = new SeeThroughActor(actorFeetWorld, actorSortingOrder);
+            StepActors(_singleActorScratch, 1, dt);
+        }
 
-            for (var i = 0; i < _fixtures.Count; i++)
+        /// <summary>
+        /// Resolves dynamic front/back depth order on walls and wide fixtures and updates
+        /// up to 4 per-actor Bayer 4x4 see-through cutouts simultaneously.
+        /// </summary>
+        public void StepActors(SeeThroughActor[] actors, int actorCount, float dt)
+        {
+            _mpb ??= new MaterialPropertyBlock();
+            var count = actors == null ? 0 : Mathf.Clamp(actorCount, 0, MaxSeeThroughActors);
+
+            for (var k = 0; k < count; k++)
             {
-                var item = _fixtures[i];
+                var feet = actors[k].FeetWorld;
+                var center = new Vector2(feet.x, feet.y + actorBoxSize.y * 0.48f);
+                _targetCentersScratch[k] = center;
+                _actorRectsScratch[k] = new Rect(
+                    center.x - actorBoxSize.x * 0.5f,
+                    feet.y,
+                    actorBoxSize.x,
+                    actorBoxSize.y);
+            }
+
+            for (var k = count; k < MaxSeeThroughActors; k++)
+            {
+                _targetCentersScratch[k] = Vector2.zero;
+                _actorRectsScratch[k] = default;
+                _occludingScratch[k] = false;
+            }
+
+            for (var i = 0; i < _occluders.Count; i++)
+            {
+                var item = _occluders[i];
                 var sr = item.Renderer;
                 if (sr == null)
                 {
                     continue;
                 }
 
-                var occluded = mode != SeeThroughMode.Off && IsOccluding(sr, actorRect, actorSortingOrder);
-                var goal = occluded ? 1f : 0f;
-                var next = MoveAmount(item.Amount, goal, dt, easeTime);
-                var changed = Mathf.Abs(next - item.Amount) > 1e-4f || next > 0.001f || item.Dirty;
-                item.Amount = next;
+                var bounds = item.Bounds;
+                var minRequiredOrder = bounds != null ? bounds.baseSortingOrder : sr.sortingOrder;
+                var maxAllowedOrder = int.MaxValue;
+                var hasAnyBehind = false;
 
-                if (changed)
+                for (var k = 0; k < count; k++)
                 {
-                    item.Dirty = next > 0.001f;
-                    ApplyToRenderer(sr, next, actorCenter);
+                    if (!HasBodyOverlap(sr, _actorRectsScratch[k], 0.14f))
+                    {
+                        _occludingScratch[k] = false;
+                        continue;
+                    }
+
+                    bool behind;
+                    if (bounds != null && actors[k].HasTilePos)
+                    {
+                        behind = IsActorBehindOccluder(actors[k].TilePos, bounds);
+                        if (behind)
+                        {
+                            hasAnyBehind = true;
+                            minRequiredOrder = Mathf.Max(minRequiredOrder, actors[k].SortingOrder + 4);
+                        }
+                        else
+                        {
+                            maxAllowedOrder = Mathf.Min(maxAllowedOrder, actors[k].SortingOrder - 2);
+                        }
+                    }
+                    else
+                    {
+                        behind = sr.sortingOrder > actors[k].SortingOrder;
+                        if (behind)
+                        {
+                            hasAnyBehind = true;
+                        }
+                    }
+
+                    _occludingScratch[k] = mode != SeeThroughMode.Off && behind;
+                }
+
+                if (bounds != null)
+                {
+                    var targetOrder = hasAnyBehind
+                        ? minRequiredOrder
+                        : Mathf.Min(bounds.baseSortingOrder, maxAllowedOrder);
+                    if (sr.sortingOrder != targetOrder)
+                    {
+                        sr.sortingOrder = targetOrder;
+                    }
+                }
+
+                var changed = false;
+                var anyActive = false;
+                for (var k = 0; k < MaxSeeThroughActors; k++)
+                {
+                    var goal = k < count && _occludingScratch[k] ? 1f : 0f;
+                    var next = MoveAmount(item.Amounts[k], goal, dt, easeTime);
+                    if (Mathf.Abs(next - item.Amounts[k]) > 1e-4f)
+                    {
+                        changed = true;
+                    }
+
+                    item.Amounts[k] = next;
+                    if (next > 0.001f)
+                    {
+                        anyActive = true;
+                    }
+                }
+
+                if (changed || anyActive || item.Dirty)
+                {
+                    item.Dirty = anyActive;
+                    ApplyToRenderer(sr, item.Amounts, _targetCentersScratch);
                 }
             }
         }
@@ -139,9 +287,9 @@ namespace HeistSim.Market2D
         public string CycleMode()
         {
             mode = (SeeThroughMode)(((int)mode + 1) % 5);
-            for (var i = 0; i < _fixtures.Count; i++)
+            for (var i = 0; i < _occluders.Count; i++)
             {
-                _fixtures[i].Dirty = true;
+                _occluders[i].Dirty = true;
             }
 
             return mode.ToString();
@@ -189,14 +337,37 @@ namespace HeistSim.Market2D
             return solid > threshold;
         }
 
-        private static bool IsOccluding(SpriteRenderer sr, Rect actorRect, int actorSortingOrder)
+        /// <summary>
+        /// Determines whether an actor at tilePos sits behind an axis-aligned occluder footprint
+        /// along the isometric camera view ray (constant i - j, increasing i + j toward the viewer).
+        /// </summary>
+        public static bool IsActorBehindOccluder(Vector2 tilePos, Iso2DOccluderBounds bounds)
         {
-            // Only fixtures drawn IN FRONT of the actor (higher isometric sortingOrder) can hide them
-            if (sr.sortingOrder <= actorSortingOrder)
+            if (bounds == null)
             {
                 return false;
             }
 
+            var ai = tilePos.x;
+            var aj = tilePos.y;
+            var u = ai - aj;
+            var xLow = Mathf.Max(bounds.minI, bounds.minJ + u);
+            var xHigh = Mathf.Min(bounds.maxI, bounds.maxJ + u);
+            if (xLow <= xHigh)
+            {
+                return ai < xLow - 0.01f;
+            }
+
+            if (u > bounds.maxI - bounds.minJ)
+            {
+                return (ai + aj) < (bounds.maxI + bounds.minJ - 0.01f);
+            }
+
+            return (ai + aj) < (bounds.minI + bounds.maxJ - 0.01f);
+        }
+
+        private static bool HasBodyOverlap(SpriteRenderer sr, Rect actorRect, float minOverlapFraction)
+        {
             var b = sr.bounds;
             var fixRect = new Rect(b.min.x, b.min.y, b.size.x, b.size.y);
             if (!fixRect.Overlaps(actorRect))
@@ -204,21 +375,24 @@ namespace HeistSim.Market2D
                 return false;
             }
 
-            // Require meaningful body overlap (at least ~20% of actor box area) to avoid edge triggers
             var ixMin = Mathf.Max(fixRect.xMin, actorRect.xMin);
             var iyMin = Mathf.Max(fixRect.yMin, actorRect.yMin);
             var ixMax = Mathf.Min(fixRect.xMax, actorRect.xMax);
             var iyMax = Mathf.Min(fixRect.yMax, actorRect.yMax);
             var overlapArea = Mathf.Max(0f, ixMax - ixMin) * Mathf.Max(0f, iyMax - iyMin);
             var actorArea = Mathf.Max(1e-4f, actorRect.width * actorRect.height);
-            return (overlapArea / actorArea) >= 0.18f;
+            return (overlapArea / actorArea) >= minOverlapFraction;
         }
 
-        private void ApplyToRenderer(SpriteRenderer sr, float amount, Vector2 actorCenter)
+        private void ApplyToRenderer(SpriteRenderer sr, float[] amounts, Vector2[] centers)
         {
             sr.GetPropertyBlock(_mpb);
-            _mpb.SetFloat(AmountId, amount);
-            _mpb.SetVector(TargetId, new Vector4(actorCenter.x, actorCenter.y, 0f, 0f));
+            var amt0 = amounts[0];
+            _mpb.SetFloat(AmountId, amt0);
+            _mpb.SetVector(TargetId, new Vector4(centers[0].x, centers[0].y, amt0, 0f));
+            _mpb.SetVector(Target1Id, new Vector4(centers[1].x, centers[1].y, amounts[1], 0f));
+            _mpb.SetVector(Target2Id, new Vector4(centers[2].x, centers[2].y, amounts[2], 0f));
+            _mpb.SetVector(Target3Id, new Vector4(centers[3].x, centers[3].y, amounts[3], 0f));
 
             switch (mode)
             {
@@ -249,6 +423,10 @@ namespace HeistSim.Market2D
                     break;
                 default:
                     _mpb.SetFloat(AmountId, 0f);
+                    _mpb.SetVector(TargetId, Vector4.zero);
+                    _mpb.SetVector(Target1Id, Vector4.zero);
+                    _mpb.SetVector(Target2Id, Vector4.zero);
+                    _mpb.SetVector(Target3Id, Vector4.zero);
                     _mpb.SetFloat(FadeAlphaId, 1f);
                     break;
             }

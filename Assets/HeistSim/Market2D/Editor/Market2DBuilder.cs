@@ -69,6 +69,7 @@ namespace HeistSim.Market2D.Editor
             ConfigureSpriteImporters(spriteMetas);
             ConfigureUiDitherTextures();
             ConfigureSpriteStackTextures();
+            ConfigureSpriteCookPropsAndIcons();
 
             AssetDatabase.Refresh();
             Market2DSpriteAtlasPrebuild.EnsureAtlases(packForEditorPreview: true);
@@ -99,7 +100,7 @@ namespace HeistSim.Market2D.Editor
             var highlightMat = EnsureHighlightMaterial();
             var previewGrid = MarketGrid.Build();
             BuildRooms(root.transform);
-            BuildLowWalls(root.transform);
+            BuildLowWalls(root.transform, highlightMat);
             BuildFixtures(root.transform, runner, highlightMat);
             BuildCctvRigs(root.transform, coneMat, runner, previewGrid);
             BuildActors(root.transform, coneMat, highlightMat, runner, previewGrid);
@@ -164,7 +165,7 @@ namespace HeistSim.Market2D.Editor
             {
                 hudController.BindElements();
                 var sampleProfile = GuardProfile.CreateDefault("standard");
-                var sampleGame = new HeistGame(sampleProfile, GuardArchitecture.Fsm);
+                var sampleGame = new HeistGame(sampleProfile, GuardArchitecture.StateTree, guardCount: 2);
                 var snap = sampleGame.Snapshot();
                 var sampleHint = new MarketActionHint(true, "Stealing", 1.8f, snap.Player, "Hold E · Steal Bio Bananas & Carrots (€22)");
                 hudController.PushLog("LOOT", "Cased Entrance · Obst & Gemüse");
@@ -183,7 +184,7 @@ namespace HeistSim.Market2D.Editor
             var prevTarget = camera.targetTexture;
             var prevRect = camera.rect;
             camera.targetTexture = worldRt;
-            camera.rect = new Rect(0f, 0f, (CaptureWidth - Market2DRunner.RightPanelWidthPx) / CaptureWidth, 1f);
+            camera.rect = new Rect(0f, 0f, 1f, 1f);
             camera.Render();
             camera.targetTexture = prevTarget;
             camera.rect = prevRect;
@@ -525,6 +526,130 @@ namespace HeistSim.Market2D.Editor
             }
         }
 
+        private static void ConfigureSpriteCookPropsAndIcons()
+        {
+            var uiPivot = new Vector2(0.5f, 0.5f);
+            var specs = new (string Path, float Ppu, Vector2 Pivot, FilterMode Filter, bool Mipmaps)[]
+            {
+                ("Assets/HeistSim/Market2D/Sprites/UI/role_patrol.png", 64f, uiPivot, FilterMode.Bilinear, false),
+                ("Assets/HeistSim/Market2D/Sprites/UI/role_pursuer.png", 64f, uiPivot, FilterMode.Bilinear, false),
+                ("Assets/HeistSim/Market2D/Sprites/UI/role_interceptor.png", 64f, uiPivot, FilterMode.Bilinear, false),
+                ("Assets/HeistSim/Market2D/Sprites/UI/role_sabotage.png", 64f, uiPivot, FilterMode.Bilinear, false),
+                ("Assets/HeistSim/Market2D/Sprites/UI/role_sweeper.png", 64f, uiPivot, FilterMode.Bilinear, false),
+                ("Assets/HeistSim/Market2D/Sprites/UI/icon_spirits_trophy.png", 64f, uiPivot, FilterMode.Bilinear, false),
+                ("Assets/HeistSim/Market2D/Sprites/UI/icon_dossier.png", 32f, uiPivot, FilterMode.Point, false),
+                ("Assets/HeistSim/Market2D/Sprites/UI/icon_loot_bag.png", 32f, uiPivot, FilterMode.Point, false),
+            };
+
+            AssetDatabase.StartAssetEditing();
+            try
+            {
+                foreach (var s in specs)
+                {
+                    ConfigureSingleSpriteImporter(s.Path, s.Ppu, s.Pivot, s.Filter, s.Mipmaps);
+                }
+            }
+            finally
+            {
+                AssetDatabase.StopAssetEditing();
+            }
+        }
+
+        private static void ConfigureSingleSpriteImporter(
+            string path,
+            float ppu,
+            Vector2 pivot,
+            FilterMode filter,
+            bool mipmaps)
+        {
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null)
+            {
+                return;
+            }
+
+            var changed = false;
+            if (importer.textureType != TextureImporterType.Sprite)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                changed = true;
+            }
+
+            if (importer.spriteImportMode != SpriteImportMode.Single)
+            {
+                importer.spriteImportMode = SpriteImportMode.Single;
+                changed = true;
+            }
+
+            if (Mathf.Abs(importer.spritePixelsPerUnit - ppu) > 0.01f)
+            {
+                importer.spritePixelsPerUnit = ppu;
+                changed = true;
+            }
+
+            if (importer.filterMode != filter)
+            {
+                importer.filterMode = filter;
+                changed = true;
+            }
+
+            if (importer.textureCompression != TextureImporterCompression.Uncompressed)
+            {
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                changed = true;
+            }
+
+            if (importer.mipmapEnabled != mipmaps)
+            {
+                importer.mipmapEnabled = mipmaps;
+                changed = true;
+            }
+
+            if (mipmaps)
+            {
+                if (importer.mipmapFilter != TextureImporterMipFilter.KaiserFilter)
+                {
+                    importer.mipmapFilter = TextureImporterMipFilter.KaiserFilter;
+                    changed = true;
+                }
+
+                if (Mathf.Abs(importer.mipMapBias - (-0.35f)) > 0.01f)
+                {
+                    importer.mipMapBias = -0.35f;
+                    changed = true;
+                }
+
+                if (importer.anisoLevel != 4)
+                {
+                    importer.anisoLevel = 4;
+                    changed = true;
+                }
+            }
+
+            if (!importer.alphaIsTransparency)
+            {
+                importer.alphaIsTransparency = true;
+                changed = true;
+            }
+
+            var settings = new TextureImporterSettings();
+            importer.ReadTextureSettings(settings);
+            if (settings.spriteAlignment != (int)SpriteAlignment.Custom
+                || Mathf.Abs(settings.spritePivot.x - pivot.x) > 0.0005f
+                || Mathf.Abs(settings.spritePivot.y - pivot.y) > 0.0005f)
+            {
+                settings.spriteAlignment = (int)SpriteAlignment.Custom;
+                settings.spritePivot = pivot;
+                importer.SetTextureSettings(settings);
+                changed = true;
+            }
+
+            if (changed)
+            {
+                importer.SaveAndReimport();
+            }
+        }
+
         private static PanelSettings EnsurePanelSettings()
         {
             var settings = AssetDatabase.LoadAssetAtPath<PanelSettings>(PanelSettingsPath);
@@ -653,13 +778,26 @@ namespace HeistSim.Market2D.Editor
             }
         }
 
-        private static void BuildLowWalls(Transform parent)
+        private static void BuildLowWalls(Transform parent, Material highlightMat)
         {
             var group = new GameObject("LowWalls").transform;
             group.SetParent(parent, false);
 
-            var spriteNe = LoadSprite("Assets/HeistSim/Market2D/Sprites/Rooms/lowwall_ne.png");
-            var spriteNw = LoadSprite("Assets/HeistSim/Market2D/Sprites/Rooms/lowwall_nw.png");
+            var spritesNe = new[]
+            {
+                LoadSprite("Assets/HeistSim/Market2D/Sprites/Rooms/lowwall_ne_start.png"),
+                LoadSprite("Assets/HeistSim/Market2D/Sprites/Rooms/lowwall_ne_mid.png"),
+                LoadSprite("Assets/HeistSim/Market2D/Sprites/Rooms/lowwall_ne_end.png"),
+            };
+            var spritesNw = new[]
+            {
+                LoadSprite("Assets/HeistSim/Market2D/Sprites/Rooms/lowwall_nw_start.png"),
+                LoadSprite("Assets/HeistSim/Market2D/Sprites/Rooms/lowwall_nw_mid.png"),
+                LoadSprite("Assets/HeistSim/Market2D/Sprites/Rooms/lowwall_nw_end.png"),
+            };
+
+            const int segmentsPerWing = 5;
+            const float segmentLength = 3.55f / segmentsPerWing;
 
             var coords = new HashSet<(int, int)>();
             foreach (var rm in MarketData.Rooms)
@@ -671,26 +809,55 @@ namespace HeistSim.Market2D.Editor
             {
                 if (coords.Contains((rm.AtI, rm.AtJ - 1)))
                 {
-                    PlaceLowWall(group, spriteNe, rm.Id + "_ne_a", rm.OriginI, rm.OriginJ, rm.OriginI + 1.775f, rm.OriginJ);
-                    PlaceLowWall(group, spriteNe, rm.Id + "_ne_b", rm.OriginI + 5.45f, rm.OriginJ, rm.OriginI + 7.225f, rm.OriginJ);
+                    PlaceLowWallWing(group, spritesNe, highlightMat, rm.Id + "_ne_a", rm.OriginI, rm.OriginJ, alongI: true, segmentsPerWing, segmentLength);
+                    PlaceLowWallWing(group, spritesNe, highlightMat, rm.Id + "_ne_b", rm.OriginI + 5.45f, rm.OriginJ, alongI: true, segmentsPerWing, segmentLength);
                 }
 
                 if (coords.Contains((rm.AtI - 1, rm.AtJ)))
                 {
-                    PlaceLowWall(group, spriteNw, rm.Id + "_nw_a", rm.OriginI, rm.OriginJ, rm.OriginI, rm.OriginJ + 1.775f);
-                    PlaceLowWall(group, spriteNw, rm.Id + "_nw_b", rm.OriginI, rm.OriginJ + 5.45f, rm.OriginI, rm.OriginJ + 7.225f);
+                    PlaceLowWallWing(group, spritesNw, highlightMat, rm.Id + "_nw_a", rm.OriginI, rm.OriginJ, alongI: false, segmentsPerWing, segmentLength);
+                    PlaceLowWallWing(group, spritesNw, highlightMat, rm.Id + "_nw_b", rm.OriginI, rm.OriginJ + 5.45f, alongI: false, segmentsPerWing, segmentLength);
                 }
             }
         }
 
-        private static void PlaceLowWall(Transform parent, Sprite sprite, string name, float i, float j, float midI, float midJ)
+        private static void PlaceLowWallWing(
+            Transform parent,
+            Sprite[] partSprites,
+            Material highlightMat,
+            string wingName,
+            float startI,
+            float startJ,
+            bool alongI,
+            int segmentCount,
+            float segmentLength)
         {
-            var go = new GameObject("LowWall_" + name);
-            go.transform.SetParent(parent, false);
-            go.transform.position = Iso2DMath.TileToWorld(i, j, 0f);
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = sprite;
-            sr.sortingOrder = Iso2DMath.DepthOrder(midI, midJ, 0);
+            for (var s = 0; s < segmentCount; s++)
+            {
+                var partIdx = s == 0 ? 0 : (s == segmentCount - 1 ? 2 : 1);
+                var minI = alongI ? startI + s * segmentLength : startI;
+                var maxI = alongI ? minI + segmentLength : startI;
+                var minJ = alongI ? startJ : startJ + s * segmentLength;
+                var maxJ = alongI ? startJ : minJ + segmentLength;
+                var midI = (minI + maxI) * 0.5f;
+                var midJ = (minJ + maxJ) * 0.5f;
+
+                var go = new GameObject("LowWall_" + wingName + "_" + s);
+                go.transform.SetParent(parent, false);
+                go.transform.position = Iso2DMath.TileToWorld(minI, minJ, 0f);
+                var sr = go.AddComponent<SpriteRenderer>();
+                sr.sprite = partSprites[partIdx];
+                sr.sharedMaterial = highlightMat;
+                sr.sortingOrder = Iso2DMath.DepthOrder(midI, midJ, 0);
+
+                var bounds = go.AddComponent<Iso2DOccluderBounds>();
+                bounds.minI = minI;
+                bounds.minJ = minJ;
+                bounds.maxI = maxI;
+                bounds.maxJ = maxJ;
+                bounds.baseSortingOrder = sr.sortingOrder;
+                bounds.isLowWall = true;
+            }
         }
 
         private static void BuildFixtures(Transform parent, Market2DRunner runner, Material highlightMat)
@@ -723,6 +890,16 @@ namespace HeistSim.Market2D.Editor
                 sr.sprite = sprite;
                 sr.sharedMaterial = highlightMat;
                 sr.sortingOrder = Iso2DMath.DepthOrder(gi + wi * 0.5f, gj + dj * 0.5f, 0);
+                if (kind.Height >= 0.75)
+                {
+                    var ob = go.AddComponent<Iso2DOccluderBounds>();
+                    ob.minI = gi;
+                    ob.minJ = gj;
+                    ob.maxI = gi + wi;
+                    ob.maxJ = gj + dj;
+                    ob.baseSortingOrder = sr.sortingOrder;
+                    ob.isLowWall = false;
+                }
 
                 var lootDef = MarketData.LootFor(fx.Id);
                 if (lootDef.HasValue)
@@ -751,87 +928,105 @@ namespace HeistSim.Market2D.Editor
             var group = new GameObject("Cameras").transform;
             group.SetParent(parent, false);
 
-            var cctvSheet = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/HeistSim/Market2D/Sprites/SpriteStack/cctv_stack_slices.png");
-            var camSprite = LoadSprite("Assets/HeistSim/Market2D/Sprites/Actors/cctv.png");
+            var mountSprite = LoadSprite("Assets/HeistSim/Market2D/Sprites/Actors/cctv_mount.png");
+            var headFrames = LoadSpriteSequence("Assets/HeistSim/Market2D/Sprites/Actors/cctv_head_", 8);
+            var rigs = new Market2DCctvRig[MarketData.Cameras.Length];
             var cones = new Iso2DVisionCone[MarketData.Cameras.Length];
-            var stacks = new SpriteStack2D[MarketData.Cameras.Length];
 
             for (var i = 0; i < MarketData.Cameras.Length; i++)
             {
                 var def = MarketData.Cameras[i];
                 var go = new GameObject(def.Id);
                 go.transform.SetParent(group, false);
-                go.transform.position = Iso2DMath.TileToWorld((float)def.I, (float)def.J, 0.55f);
+                go.transform.position = Iso2DMath.TileToWorld((float)def.I, (float)def.J, 0f);
 
-                if (cctvSheet != null)
-                {
-                    var stack = go.AddComponent<SpriteStack2D>();
-                    stack.sliceSheet = cctvSheet;
-                    stack.sliceCount = 14;
-                    stack.pixelsPerUnit = 96f;
-                    stack.spacingPx = 0.85f;
-                    stack.squash = 0.65f;
-                    stack.baseSortingOrder = Iso2DMath.DepthOrder((float)def.I, (float)def.J, 30);
-                    var dirWorld = Iso2DMath.TileToWorld((float)(def.I + Math.Cos(def.BaseAngle)), (float)(def.J + Math.Sin(def.BaseAngle)), 0f)
-                        - Iso2DMath.TileToWorld((float)def.I, (float)def.J, 0f);
-                    stack.turnDegrees = SpriteStack2D.VelocityToTurnDegrees(new Vector2(dirWorld.x, dirWorld.y));
-                    stack.RebuildSlices();
-                    stacks[i] = stack;
-                }
-                else
-                {
-                    var sr = go.AddComponent<SpriteRenderer>();
-                    sr.sprite = camSprite;
-                    sr.sortingOrder = Iso2DMath.DepthOrder((float)def.I, (float)def.J, 30);
-                }
+                var rig = go.AddComponent<Market2DCctvRig>();
+                rig.headFrames = headFrames;
+                rig.lensHeightWorld = 0.56f;
+
+                var mountGo = new GameObject("Mount");
+                mountGo.transform.SetParent(go.transform, false);
+                mountGo.transform.localPosition = Vector3.zero;
+                var mountSr = mountGo.AddComponent<SpriteRenderer>();
+                mountSr.sprite = mountSprite;
+                mountSr.sortingOrder = Iso2DMath.DepthOrder((float)def.I, (float)def.J, 28);
+                rig.mountRenderer = mountSr;
+
+                var headGo = new GameObject("TurretHead");
+                headGo.transform.SetParent(go.transform, false);
+                headGo.transform.localPosition = new Vector3(0f, rig.lensHeightWorld, 0f);
+                var headSr = headGo.AddComponent<SpriteRenderer>();
+                headSr.sprite = headFrames[0];
+                headSr.sortingOrder = Iso2DMath.DepthOrder((float)def.I, (float)def.J, 32);
+                rig.headRenderer = headSr;
+
+                var tetherGo = new GameObject("BeamTether");
+                tetherGo.transform.SetParent(go.transform, false);
+                tetherGo.transform.localPosition = Vector3.zero;
+                var tether = tetherGo.AddComponent<LineRenderer>();
+                tether.useWorldSpace = false;
+                tether.loop = false;
+                tether.widthMultiplier = 0.024f;
+                tether.numCornerVertices = 2;
+                tether.numCapVertices = 2;
+                tether.sharedMaterial = coneMat;
+                tether.sortingOrder = Iso2DMath.ConeSortingOrder + 1;
+                rig.beamTether = tether;
 
                 var coneObj = new GameObject(def.Id + "_Cone");
-                coneObj.transform.SetParent(group, false);
+                coneObj.transform.SetParent(go.transform, false);
+                coneObj.transform.localPosition = Vector3.zero;
                 var cone = coneObj.AddComponent<Iso2DVisionCone>();
                 cone.EnsureMesh(coneMat);
-                cone.SetFan((float)def.I, (float)def.J, (float)def.BaseAngle, (float)def.HalfAngle, (float)def.Range,
-                    new Color(RisoPalette.InkBlue.r, RisoPalette.InkBlue.g, RisoPalette.InkBlue.b, 0.28f),
-                    grid,
-                    new Color(RisoPalette.InkBlue.r, RisoPalette.InkBlue.g, RisoPalette.InkBlue.b, 0.88f),
-                    ignoreOriginWall: true);
+                rig.visionCone = cone;
+
+                rig.Sync((float)def.I, (float)def.J, (float)def.BaseAngle, (float)def.HalfAngle, (float)def.Range, online: true, sighting: false, grid);
+                rigs[i] = rig;
                 cones[i] = cone;
             }
 
             // Place a visible Security Power Panel fixture at MarketData.Panel (29.0, 25.5 in r6) so the player can find & cut CCTV power
-            var panelSprite = LoadSprite("Assets/HeistSim/Market2D/Sprites/Fixtures/server-rack__ne.png");
+            var highlightMat = EnsureHighlightMaterial();
+            var panelSprite = LoadSprite("Assets/HeistSim/Market2D/Sprites/Props/prop_cctv_panel.png")
+                ?? LoadSprite("Assets/HeistSim/Market2D/Sprites/Fixtures/server-rack__ne.png");
             if (panelSprite != null)
             {
                 var panelGo = new GameObject("CctvPowerPanel");
                 panelGo.transform.SetParent(parent, false);
                 panelGo.transform.position = Iso2DMath.TileToWorld((float)MarketData.Panel.I, (float)MarketData.Panel.J, 0f);
-                panelGo.transform.localScale = new Vector3(0.78f, 0.78f, 1f);
+                panelGo.transform.localScale = Vector3.one;
                 var panelSr = panelGo.AddComponent<SpriteRenderer>();
                 panelSr.sprite = panelSprite;
-                panelSr.sharedMaterial = EnsureHighlightMaterial();
+                panelSr.sharedMaterial = highlightMat;
                 panelSr.sortingOrder = Iso2DMath.DepthOrder((float)MarketData.Panel.I, (float)MarketData.Panel.J, 4);
                 runner.cctvPanelSprite = panelSr;
             }
 
-            // Place the NB 2.1 Sprite-Stacked Shopping Cart in the Entrance lobby
-            var cartSheet = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/HeistSim/Market2D/Sprites/SpriteStack/cart_stack_slices.png");
-            if (cartSheet != null)
-            {
-                var cartGo = new GameObject("StackedShoppingCart");
-                cartGo.transform.SetParent(parent, false);
-                cartGo.transform.position = Iso2DMath.TileToWorld(5.6f, 2.2f, 0.05f);
-                var cartStack = cartGo.AddComponent<SpriteStack2D>();
-                cartStack.sliceSheet = cartSheet;
-                cartStack.sliceCount = 16;
-                cartStack.pixelsPerUnit = 68f;
-                cartStack.spacingPx = 0.9f;
-                cartStack.squash = 0.65f;
-                cartStack.turnDegrees = -35f;
-                cartStack.baseSortingOrder = Iso2DMath.DepthOrder(5.6f, 2.2f, 6);
-                cartStack.RebuildSlices();
-            }
+            // Place the unified Riso RF De-Tagger pad at MarketData.Detagger
+            var detaggerSprite = LoadSprite("Assets/HeistSim/Market2D/Sprites/Props/prop_detagger.png");
+            var detaggerGo = new GameObject("RfDetaggerPad");
+            detaggerGo.transform.SetParent(parent, false);
+            detaggerGo.transform.position = Iso2DMath.TileToWorld((float)MarketData.Detagger.I, (float)MarketData.Detagger.J, 0f);
+            detaggerGo.transform.localScale = Vector3.one;
+            var detaggerSr = detaggerGo.AddComponent<SpriteRenderer>();
+            detaggerSr.sprite = detaggerSprite;
+            detaggerSr.sharedMaterial = highlightMat;
+            detaggerSr.sortingOrder = Iso2DMath.DepthOrder((float)MarketData.Detagger.I, (float)MarketData.Detagger.J, 4);
+            runner.detaggerPadSprite = detaggerSr;
 
+            // Create hidden reusable acoustic decoy coin visual for TossDecoyCoin [Q]
+            var decoyGo = new GameObject("DecoyCoin");
+            decoyGo.transform.SetParent(parent, false);
+            decoyGo.transform.localScale = new Vector3(0.78f, 0.78f, 1f);
+            var decoySr = decoyGo.AddComponent<SpriteRenderer>();
+            decoySr.sprite = LoadSprite("Assets/HeistSim/Market2D/Sprites/Props/prop_decoy_coin.png");
+            decoySr.enabled = false;
+            decoySr.sortingOrder = Iso2DMath.DepthOrder(0f, 0f, 6);
+            runner.decoyCoinSprite = decoySr;
+
+            runner.cctvRigs = rigs;
             runner.cctvCones = cones;
-            runner.cctvStacks = stacks;
+            runner.cctvStacks = Array.Empty<SpriteStack2D>();
         }
 
         private static void BuildActors(Transform parent, Material coneMat, Material actorMat, Market2DRunner runner, NavGrid grid)
@@ -848,6 +1043,7 @@ namespace HeistSim.Market2D.Editor
             var guardSp = LoadSprite("Assets/HeistSim/Market2D/Sprites/Actors/guard.png");
             var guardWalk1 = LoadSprite("Assets/HeistSim/Market2D/Sprites/Actors/guard_walk1.png");
             var guardWalk2 = LoadSprite("Assets/HeistSim/Market2D/Sprites/Actors/guard_walk2.png");
+            var guard2Sp = LoadSprite("Assets/HeistSim/Market2D/Sprites/Actors/guard2.png");
             var staffSp = LoadSprite("Assets/HeistSim/Market2D/Sprites/Actors/staff.png");
             var staffWalk1 = LoadSprite("Assets/HeistSim/Market2D/Sprites/Actors/staff_walk1.png");
             var staffWalk2 = LoadSprite("Assets/HeistSim/Market2D/Sprites/Actors/staff_walk2.png");
@@ -861,7 +1057,7 @@ namespace HeistSim.Market2D.Editor
             var playerSr = playerGo.AddComponent<SpriteRenderer>();
             playerSr.sprite = playerStand;
             playerSr.sharedMaterial = actorMat;
-            playerSr.sortingOrder = Iso2DMath.DepthOrder((float)MarketData.PlayerSpawn.I, (float)MarketData.PlayerSpawn.J, 12);
+            playerSr.sortingOrder = Iso2DMath.DepthOrder((float)MarketData.PlayerSpawn.I, (float)MarketData.PlayerSpawn.J, 1);
 
             runner.playerSprite = playerSr;
             runner.playerStandSprite = playerStand;
@@ -870,6 +1066,8 @@ namespace HeistSim.Market2D.Editor
             runner.playerCrouchSprite = playerCrouch;
             runner.playerCrouchWalk1Sprite = playerCrouchWalk1;
             runner.playerCrouchWalk2Sprite = playerCrouchWalk2;
+            runner.playerWalkFrames = LoadSpriteSequence("Assets/HeistSim/Market2D/Sprites/Actors/player_walk_", 6);
+            runner.playerCrouchWalkFrames = LoadSpriteSequence("Assets/HeistSim/Market2D/Sprites/Actors/player_crouch_walk_", 6);
 
             // Guard
             var guardPos = HeistGame.GuardStart;
@@ -879,7 +1077,7 @@ namespace HeistSim.Market2D.Editor
             var guardSr = guardGo.AddComponent<SpriteRenderer>();
             guardSr.sprite = guardSp;
             guardSr.sharedMaterial = actorMat;
-            guardSr.sortingOrder = Iso2DMath.DepthOrder(guardPos.x, guardPos.y, 14);
+            guardSr.sortingOrder = Iso2DMath.DepthOrder(guardPos.x, guardPos.y, 2);
 
             var bubbleGo = new GameObject("GuardBubble");
             bubbleGo.transform.SetParent(guardGo.transform, false);
@@ -900,10 +1098,43 @@ namespace HeistSim.Market2D.Editor
             runner.guardStandSprite = guardSp;
             runner.guardWalk1Sprite = guardWalk1;
             runner.guardWalk2Sprite = guardWalk2;
+            runner.guardWalkFrames = LoadSpriteSequence("Assets/HeistSim/Market2D/Sprites/Actors/guard_walk_", 6);
             runner.guardBubbleSprite = bubbleSr;
             runner.alertBubbleSprite = alertSp;
             runner.questionBubbleSprite = questionSp;
             runner.guardVisionCone = guardCone;
+
+            // Guard 2 (distinct SpriteCook officer covering south/east wing)
+            var guard2Pos = HeistGame.Guard2Start;
+            var guard2Go = new GameObject("Guard2");
+            guard2Go.transform.SetParent(group, false);
+            guard2Go.transform.position = Iso2DMath.TileToWorld(guard2Pos);
+            var guard2Sr = guard2Go.AddComponent<SpriteRenderer>();
+            guard2Sr.sprite = guard2Sp;
+            guard2Sr.sharedMaterial = actorMat;
+            guard2Sr.color = Color.white;
+            guard2Sr.sortingOrder = Iso2DMath.DepthOrder(guard2Pos.x, guard2Pos.y, 3);
+
+            var bubble2Go = new GameObject("Guard2Bubble");
+            bubble2Go.transform.SetParent(guard2Go.transform, false);
+            bubble2Go.transform.localPosition = new Vector3(0f, 0.45f, 0f);
+            var bubble2Sr = bubble2Go.AddComponent<SpriteRenderer>();
+            bubble2Sr.sprite = alertSp;
+            bubble2Sr.enabled = false;
+            bubble2Sr.sortingOrder = guard2Sr.sortingOrder + 60;
+
+            var cone2Go = new GameObject("Guard2VisionCone");
+            cone2Go.transform.SetParent(group, false);
+            var guard2Cone = cone2Go.AddComponent<Iso2DVisionCone>();
+            guard2Cone.EnsureMesh(coneMat);
+            guard2Cone.SetFan(guard2Pos.x, guard2Pos.y, 3.14f, 0.60f, 5.4f,
+                new Color(RisoPalette.Teal.r, RisoPalette.Teal.g, RisoPalette.Teal.b, 0.22f), grid);
+
+            runner.guard2Sprite = guard2Sr;
+            runner.guard2StandSprite = guard2Sp;
+            runner.guard2WalkFrames = LoadSpriteSequence("Assets/HeistSim/Market2D/Sprites/Actors/guard2_walk_", 6);
+            runner.guard2BubbleSprite = bubble2Sr;
+            runner.guard2VisionCone = guard2Cone;
 
             // Staff
             var staffStart = MarketData.StaffRoute[0];
@@ -913,12 +1144,13 @@ namespace HeistSim.Market2D.Editor
             staffGo.transform.position = Iso2DMath.TileToWorld(staffPos);
             var staffSr = staffGo.AddComponent<SpriteRenderer>();
             staffSr.sprite = staffSp;
-            staffSr.sortingOrder = Iso2DMath.DepthOrder(staffPos.x, staffPos.y, 10);
+            staffSr.sortingOrder = Iso2DMath.DepthOrder(staffPos.x, staffPos.y, 0);
 
             runner.staffSprite = staffSr;
             runner.staffStandSprite = staffSp;
             runner.staffWalk1Sprite = staffWalk1;
             runner.staffWalk2Sprite = staffWalk2;
+            runner.staffWalkFrames = LoadSpriteSequence("Assets/HeistSim/Market2D/Sprites/Actors/staff_walk_", 6);
         }
 
         private static void BuildHud(PanelSettings panelSettings, VisualTreeAsset uxml, Market2DRunner runner)
@@ -963,7 +1195,27 @@ namespace HeistSim.Market2D.Editor
             }
 
             var controller = hudGo.AddComponent<Market2DHudController>();
+            controller.rolePatrolIcon = LoadSprite("Assets/HeistSim/Market2D/Sprites/UI/role_patrol.png");
+            controller.rolePursuerIcon = LoadSprite("Assets/HeistSim/Market2D/Sprites/UI/role_pursuer.png");
+            controller.roleInterceptorIcon = LoadSprite("Assets/HeistSim/Market2D/Sprites/UI/role_interceptor.png");
+            controller.roleSabotageIcon = LoadSprite("Assets/HeistSim/Market2D/Sprites/UI/role_sabotage.png");
+            controller.roleSweeperIcon = LoadSprite("Assets/HeistSim/Market2D/Sprites/UI/role_sweeper.png");
+            controller.spiritsTrophyIcon = LoadSprite("Assets/HeistSim/Market2D/Sprites/UI/icon_spirits_trophy.png");
+            controller.dossierIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/HeistSim/Market2D/Sprites/UI/icon_dossier.png");
+            controller.lootBagIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/HeistSim/Market2D/Sprites/UI/icon_loot_bag.png");
+            EditorUtility.SetDirty(controller);
             runner.hud = controller;
+        }
+
+        private static Sprite[] LoadSpriteSequence(string pathPrefix, int count)
+        {
+            var seq = new Sprite[count];
+            for (var i = 0; i < count; i++)
+            {
+                seq[i] = LoadSprite(pathPrefix + i + ".png");
+            }
+
+            return seq;
         }
 
         private static Sprite LoadSprite(string path)

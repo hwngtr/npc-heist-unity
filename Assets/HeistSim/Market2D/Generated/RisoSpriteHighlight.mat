@@ -45,6 +45,9 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _HighlightColor: {r: 1, g: 0.831, b: 0.157, a: 1}
     - _SeeThroughTarget: {r: 0, g: 0, b: 0, a: 0}
+    - _SeeThroughTarget1: {r: 0, g: 0, b: 0, a: 0}
+    - _SeeThroughTarget2: {r: 0, g: 0, b: 0, a: 0}
+    - _SeeThroughTarget3: {r: 0, g: 0, b: 0, a: 0}
     - _StatusTintColor: {r: 0.94, g: 0.18, b: 0.18, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

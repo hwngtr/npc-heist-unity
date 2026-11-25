@@ -423,5 +423,28 @@ namespace HeistSim.Tests
                 Assert.That(sumDist / rays, Is.GreaterThanOrEqualTo(1.5f), cam.Id + " average fan depth must be clearly visible");
             }
         }
+
+        [Test]
+        public void AlertAudioCooldownPreventsRapidAlertStacking()
+        {
+            Assert.That(Market2DAudio.MinAlertIntervalSeconds, Is.GreaterThanOrEqualTo(0.8f));
+            Assert.That(Market2DRunner.AlertFeedbackCooldownSeconds, Is.GreaterThanOrEqualTo(2.0f));
+            Assert.That(Market2DRunner.AlertShakeCooldownSeconds, Is.GreaterThanOrEqualTo(2.5f));
+
+            var go = new GameObject("TestAlertAudio");
+            try
+            {
+                var audio = go.AddComponent<Market2DAudio>();
+                audio.EnsureInitialized();
+                audio.PlayAlert();
+                audio.PlayAlert();
+                audio.ResetCooldowns();
+                audio.PlayAlert(force: true);
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
     }
 }

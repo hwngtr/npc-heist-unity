@@ -198,7 +198,8 @@ def _draw_cone(
     a1 = r1 * RX
     b1 = r1 * RY
     if s.get("shadow") and height > 0.05:
-        shadow_at(h, cx + a * 0.35, yb + 2.0, a * 1.05, b * 1.05, 0.20)
+        shadow_at(h, cx + 0.5, yb + 0.6, a * 1.06, b * 1.08, 0.34)
+        shadow_at(h, cx + a * 0.30, yb + 1.6, a * 1.12, b * 1.06, 0.18)
 
     pts = arc_pts(cx, yb, a, b, 0.0, TAU, 36) + arc_pts(cx, yt, max(a1, 0.05), max(b1, 0.05), 0.0, TAU, 36)
     pts.sort(key=lambda pt: (pt[0], pt[1]))
@@ -525,6 +526,15 @@ def _draw_primitive(h: RisoHand, rng: SeededRng, s: Dict[str, Any], ctx: Dict[st
         h.dot(x, y, float(s.get("r", 1.5)), col[0], max(col[1], 0.85), knock=True)
 
 
+def _shape_base_z(s: Dict[str, Any]) -> float:
+    for key in ("box", "cyl", "cone", "legs", "ball"):
+        if key in s:
+            return float(s[key][2])
+    if "pole" in s:
+        return min(float(s["pole"][2]), float(s["pole"][5]))
+    return 0.0
+
+
 def draw_thing(
     h: RisoHand,
     rng: SeededRng,
@@ -543,10 +553,12 @@ def draw_thing(
         "fine": kind.get("fine", False) if fine is None else fine,
         "lw": lw,
     }
-    if kind.get("place") not in ("wall", "rug") and kind.get("shadow", True) is not False:
-        w, d = pl.size(size[0], size[1])
-        shadow_box(h, float(item["at"].get("i", 0.0)), float(item["at"].get("j", 0.0)), w, d, float(item["at"].get("z", 0.0)), float(kind.get("height", 1.0)) * 0.7, 0.20)
     shapes = [_resolve_shape(s0, kind, item) for s0 in kind.get("shapes", [])]
+    has_floor_shape_shadow = any(s.get("shadow") and _shape_base_z(s) <= 0.05 for s in shapes)
+    if kind.get("place") not in ("wall", "rug") and kind.get("shadow", True) is not False and (not has_floor_shape_shadow or kind.get("name") == "shopping-cart"):
+        w, d = pl.size(size[0], size[1])
+        fallback_tone = 0.13 if kind.get("name") == "shopping-cart" else 0.20
+        shadow_box(h, float(item["at"].get("i", 0.0)), float(item["at"].get("j", 0.0)), w, d, float(item["at"].get("z", 0.0)), float(kind.get("height", 1.0)) * 0.7, fallback_tone)
     for s in shapes:
         _draw_primitive(h, rng, s, ctx)
 
@@ -564,10 +576,10 @@ def screen_box(kind: Dict[str, Any], item: Dict[str, Any]) -> Dict[str, int]:
                 pts.append(iso(*pl.w(u, v, z)))
     x0, y0, x1, y1 = bbox(pts)
     reach = kind.get("reach") or {}
-    pad = 18
+    pad = 22
     return {
-        "x0": int(math.floor(x0 - max(pad, reach.get("l", 0) + 10))),
+        "x0": int(math.floor(x0 - max(pad, reach.get("l", 0) + 12))),
         "y0": int(math.floor(y0 - max(pad, reach.get("t", 0) + 14))),
-        "x1": int(math.ceil(x1 + max(pad, reach.get("r", 0) + 18))),
-        "y1": int(math.ceil(y1 + max(pad, reach.get("b", 0) + 16))),
+        "x1": int(math.ceil(x1 + max(pad, reach.get("r", 0) + 22))),
+        "y1": int(math.ceil(y1 + max(pad, reach.get("b", 0) + 22))),
     }

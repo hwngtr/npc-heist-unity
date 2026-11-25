@@ -48,6 +48,10 @@ namespace HeistSim.Market2D
         private readonly List<Color> _cols = new(MaxMarks * 4);
         private readonly List<int> _tris = new(MaxMarks * 6);
         private bool _initialized;
+        private float _meshAccum;
+
+        /// <summary>Enables the software 8-bit trail simulation during runtime steps (off by default when only floor quads are rendered).</summary>
+        public bool runSoftwareTrailBuffer;
 
         /// <summary>Current scrolling canvas top-left origin in trail cells.</summary>
         public Vector2Int Origin => _origin;
@@ -238,25 +242,28 @@ namespace HeistSim.Market2D
             };
         }
 
-        /// <summary>Advances the 30 Hz trail buffer and floor footprint fade timers.</summary>
+        /// <summary>Advances floor footprint fade timers and, when enabled, the 30 Hz software trail buffer.</summary>
         public void Step(Vector2 playerTile, bool bootContact, float dt)
         {
             EnsureInitialized();
-            var feetCell = new Vector2Int(Mathf.RoundToInt(playerTile.x * 4f), Mathf.RoundToInt(playerTile.y * 4f));
-
-            _canvasAccum += dt;
-            const float canvasStep = 1f / 30f;
-            var didBoot = false;
-            while (_canvasAccum >= canvasStep)
+            if (runSoftwareTrailBuffer)
             {
-                _canvasAccum -= canvasStep;
-                StepCanvasTick(feetCell, bootContact && !didBoot, new Vector2Int(2, 0));
-                didBoot = true;
-            }
+                var feetCell = new Vector2Int(Mathf.RoundToInt(playerTile.x * 4f), Mathf.RoundToInt(playerTile.y * 4f));
 
-            if (bootContact && !didBoot)
-            {
-                StepCanvasTick(feetCell, true, new Vector2Int(2, 0));
+                _canvasAccum += dt;
+                const float canvasStep = 1f / 30f;
+                var didBoot = false;
+                while (_canvasAccum >= canvasStep)
+                {
+                    _canvasAccum -= canvasStep;
+                    StepCanvasTick(feetCell, bootContact && !didBoot, new Vector2Int(2, 0));
+                    didBoot = true;
+                }
+
+                if (bootContact && !didBoot)
+                {
+                    StepCanvasTick(feetCell, true, new Vector2Int(2, 0));
+                }
             }
 
             var anyActive = false;
@@ -278,8 +285,10 @@ namespace HeistSim.Market2D
                 }
             }
 
-            if (anyActive || _verts.Count > 0)
+            _meshAccum += dt;
+            if (bootContact || (!anyActive && _verts.Count > 0) || (anyActive && _meshAccum >= 0.04f))
             {
+                _meshAccum = 0f;
                 RebuildMesh();
             }
         }

@@ -43,6 +43,11 @@ namespace HeistSim.Market2D
         private bool _wasUnlocked;
         private float _popTimer;
         private float _popDuration = 0.22f;
+        private float _shaderAccum;
+        private bool _hasSyncedOnce;
+        private bool _lastStolenParam;
+        private bool _lastVitrineOpenParam;
+        private bool _lastInRangeParam;
 
         /// <summary>True once this fixture's loot has been stolen in the current shift.</summary>
         public bool IsStolen => _wasStolen;
@@ -81,6 +86,11 @@ namespace HeistSim.Market2D
             _wasStolen = false;
             _wasUnlocked = false;
             _popTimer = 0f;
+            _shaderAccum = 0f;
+            _hasSyncedOnce = false;
+            _lastStolenParam = false;
+            _lastVitrineOpenParam = false;
+            _lastInRangeParam = false;
             transform.localScale = _baseScale;
             if (spriteRenderer != null && stockedSprite != null)
             {
@@ -159,35 +169,49 @@ namespace HeistSim.Market2D
             }
 
             // Silhouette highlight shader parameters (zero highlight once stolen!)
-            if (stolen)
+            _shaderAccum += dt;
+            var stateChanged = !_hasSyncedOnce
+                || stolen != _lastStolenParam
+                || vitrineOpen != _lastVitrineOpenParam
+                || inRange != _lastInRangeParam;
+            if (stateChanged || (!stolen && _shaderAccum >= 0.05f))
             {
-                ApplyShader(0f, RisoPalette.Sun, 3.0f);
-            }
-            else
-            {
-                var phase = 0.5f + 0.5f * Mathf.Sin(clock * (inRange ? 6.2f : 2.8f) + (fixtureId?.GetHashCode() ?? 0) * 0.001f);
-                Color col;
-                if (isVitrineGated && !vitrineOpen)
+                _hasSyncedOnce = true;
+                _lastStolenParam = stolen;
+                _lastVitrineOpenParam = vitrineOpen;
+                _lastInRangeParam = inRange;
+                _shaderAccum = 0f;
+
+                if (stolen)
                 {
-                    // Locked vitrine gleams between Coral and Sun to signal force-open required
-                    col = Color.Lerp(RisoPalette.Coral, RisoPalette.Sun, 0.35f + 0.35f * phase);
-                }
-                else if (isRfTagged)
-                {
-                    // RF-tagged high-value loot alternates Sun gold and Coral accent rim
-                    col = Color.Lerp(RisoPalette.Sun, RisoPalette.Coral, 0.25f + 0.35f * phase);
+                    ApplyShader(0f, RisoPalette.Sun, 3.0f);
                 }
                 else
                 {
-                    // Untagged stealable loot glows in crisp warm riso Sun gold
-                    col = RisoPalette.Sun;
-                }
+                    var phase = 0.5f + 0.5f * Mathf.Sin(clock * (inRange ? 6.2f : 2.8f) + (fixtureId?.GetHashCode() ?? 0) * 0.001f);
+                    Color col;
+                    if (isVitrineGated && !vitrineOpen)
+                    {
+                        // Locked vitrine gleams between Coral and Sun to signal force-open required
+                        col = Color.Lerp(RisoPalette.Coral, RisoPalette.Sun, 0.35f + 0.35f * phase);
+                    }
+                    else if (isRfTagged)
+                    {
+                        // RF-tagged high-value loot alternates Sun gold and Coral accent rim
+                        col = Color.Lerp(RisoPalette.Sun, RisoPalette.Coral, 0.25f + 0.35f * phase);
+                    }
+                    else
+                    {
+                        // Untagged stealable loot glows in crisp warm riso Sun gold
+                        col = RisoPalette.Sun;
+                    }
 
-                var amount = inRange
-                    ? Mathf.Lerp(0.95f, 1.0f, phase)
-                    : Mathf.Lerp(0.84f, 0.98f, phase);
-                var width = inRange ? 7.5f : 5.5f;
-                ApplyShader(amount, col, width);
+                    var amount = inRange
+                        ? Mathf.Lerp(0.95f, 1.0f, phase)
+                        : Mathf.Lerp(0.84f, 0.98f, phase);
+                    var width = inRange ? 7.5f : 5.5f;
+                    ApplyShader(amount, col, width);
+                }
             }
 
             return justStolen;

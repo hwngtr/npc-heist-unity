@@ -11,6 +11,24 @@ namespace HeistSim.Market2D
     /// </summary>
     public static class Shadowcast2D
     {
+        private readonly struct CctvSightBox
+        {
+            public CctvSightBox(float x0, float y0, float x1, float y1)
+            {
+                X0 = x0;
+                Y0 = y0;
+                X1 = x1;
+                Y1 = y1;
+            }
+
+            public readonly float X0;
+            public readonly float Y0;
+            public readonly float X1;
+            public readonly float Y1;
+        }
+
+        private static readonly CctvSightBox[] CctvSightBoxes = BuildCctvSightBoxes();
+
         private static readonly (int Xx, int Xy, int Yx, int Yy)[] Octants =
         {
             ( 1,  0,  0,  1),
@@ -193,7 +211,7 @@ namespace HeistSim.Market2D
                 return 0f;
             }
 
-            const float step = 0.14f;
+            const float step = 0.22f;
             var cos = Mathf.Cos(angleRad);
             var sin = Mathf.Sin(angleRad);
             var originCi = Mathf.Clamp(Mathf.FloorToInt(originI), 0, MarketData.WidthTiles - 1);
@@ -222,12 +240,69 @@ namespace HeistSim.Market2D
                     }
                 }
 
+                if (dist > 0.85f && HitsTallSightBox(ti, tj, originI, originJ))
+                {
+                    return dist;
+                }
+
                 prevCi = ci;
                 prevCj = cj;
                 dist += step;
             }
 
             return maxRange;
+        }
+
+        private static bool HitsTallSightBox(float ti, float tj, float originI, float originJ)
+        {
+            for (var i = 0; i < CctvSightBoxes.Length; i++)
+            {
+                var box = CctvSightBoxes[i];
+                if (ti <= box.X0 || ti >= box.X1 || tj <= box.Y0 || tj >= box.Y1)
+                {
+                    continue;
+                }
+
+                // Do not self-occlude against a cabinet adjacent to the camera mount
+                if (originI > box.X0 - 0.85f && originI < box.X1 + 0.85f
+                    && originJ > box.Y0 - 0.85f && originJ < box.Y1 + 0.85f)
+                {
+                    continue;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private static CctvSightBox[] BuildCctvSightBoxes()
+        {
+            var list = new List<CctvSightBox>(32);
+            foreach (var fixture in MarketData.Fixtures)
+            {
+                var kind = MarketData.Kind(fixture.Kind);
+                if (kind.Place == "wall" || kind.Place == "rug" || kind.Height < 1.4)
+                {
+                    continue;
+                }
+
+                var swapped = fixture.Face == "ne" || fixture.Face == "sw";
+                var li = fixture.I + (swapped ? kind.SizeI / 2 : kind.SizeJ / 2);
+                var lj = fixture.J + (swapped ? kind.SizeJ / 2 : kind.SizeI / 2);
+                var room = MarketData.Room(fixture.Room);
+                li = Math.Min(8.2, Math.Max(0.8, li));
+                lj = Math.Min(8.2, Math.Max(0.8, lj));
+                var px = (float)(room.OriginI + li);
+                var py = (float)(room.OriginJ + lj);
+                list.Add(new CctvSightBox(
+                    px - 0.2f,
+                    py - 0.2f,
+                    px + (float)kind.SizeI * 0.7f,
+                    py + (float)kind.SizeJ * 0.7f));
+            }
+
+            return list.ToArray();
         }
 
         /// <summary>
@@ -248,7 +323,7 @@ namespace HeistSim.Market2D
                 return Mathf.Max(0f, maxRange);
             }
 
-            const float step = 0.12f;
+            const float step = 0.22f;
             var cos = Mathf.Cos(angleRad);
             var sin = Mathf.Sin(angleRad);
             var originCi = Mathf.FloorToInt(originI);

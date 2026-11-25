@@ -38,7 +38,7 @@ Material:
     - _CrtGlow: 0.16
     - _CrtMaskStrength: 0.25
     - _CrtScanlineStrength: 0.55
-    - _MoodPhase: 2.2079985
+    - _MoodPhase: 0.0010489455
     - _MoodStrength: 0.45
     - _TransPixelSize: 3
     - _TransProgress: 0
@@ -46,7 +46,7 @@ Material:
     - _TransStyle: 2
     m_Colors:
     - _CrtWarp: {r: 0.025, g: 0.032, b: 0, a: 0}
-    - _TransCenter: {r: 0.34935433, g: 0.43382943, b: 0, a: 0}
+    - _TransCenter: {r: 0.52442235, g: 0.4538996, b: 0, a: 0}
     - _TransColor: {r: 0.20392157, g: 0.2901961, b: 0.5019608, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

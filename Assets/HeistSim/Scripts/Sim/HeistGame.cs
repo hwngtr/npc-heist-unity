@@ -11,6 +11,8 @@ namespace HeistSim
         Fsm,
         /// <summary>Reactive priority behavior tree.</summary>
         Bt,
+        /// <summary>Hierarchical StateTree with HTN tactical planner and occupancy-grid search.</summary>
+        StateTree,
     }
 
     /// <summary>Final result of a market run.</summary>
@@ -92,7 +94,18 @@ namespace HeistSim
             bool detaggerInRange,
             bool exitInRange,
             bool exitBlockedByTags,
-            InteractOutcome lastInteraction)
+            InteractOutcome lastInteraction,
+            bool hasSecondGuard = false,
+            Vector2 guard2 = default,
+            string guard2State = "idle",
+            int guard2Waypoint = 0,
+            string guard1Plan = null,
+            string guard2Plan = null,
+            GuardTacticalRole guard1Role = GuardTacticalRole.Patrol,
+            GuardTacticalRole guard2Role = GuardTacticalRole.Patrol,
+            bool cctvRestoring = false,
+            float cctvRestoreProgress = 0f,
+            int cctvRestoreCount = 0)
         {
             Tick = tick;
             Player = player;
@@ -130,6 +143,17 @@ namespace HeistSim
             ExitInRange = exitInRange;
             ExitBlockedByTags = exitBlockedByTags;
             LastInteraction = lastInteraction;
+            HasSecondGuard = hasSecondGuard;
+            Guard2 = guard2;
+            Guard2State = guard2State;
+            Guard2Waypoint = guard2Waypoint;
+            Guard1Plan = guard1Plan;
+            Guard2Plan = guard2Plan;
+            Guard1Role = guard1Role;
+            Guard2Role = guard2Role;
+            CctvRestoring = cctvRestoring;
+            CctvRestoreProgress = cctvRestoreProgress;
+            CctvRestoreCount = cctvRestoreCount;
         }
 
         /// <summary>Simulation tick number.</summary>
@@ -240,6 +264,39 @@ namespace HeistSim
         /// <summary>Outcome of the most recent action button attempt.</summary>
         public InteractOutcome LastInteraction { get; }
 
+        /// <summary>Whether a second coordinated security guard is active in this shift.</summary>
+        public bool HasSecondGuard { get; }
+
+        /// <summary>Second guard position in tiles.</summary>
+        public Vector2 Guard2 { get; }
+
+        /// <summary>Second guard state name, lower case.</summary>
+        public string Guard2State { get; }
+
+        /// <summary>Current second guard patrol waypoint index.</summary>
+        public int Guard2Waypoint { get; }
+
+        /// <summary>Active StateTree/HTN plan name for Guard 1, if running StateTree.</summary>
+        public string Guard1Plan { get; }
+
+        /// <summary>Active StateTree/HTN plan name for Guard 2, if running StateTree.</summary>
+        public string Guard2Plan { get; }
+
+        /// <summary>Active squad blackboard tactical role for Guard 1.</summary>
+        public GuardTacticalRole Guard1Role { get; }
+
+        /// <summary>Active squad blackboard tactical role for Guard 2.</summary>
+        public GuardTacticalRole Guard2Role { get; }
+
+        /// <summary>True while a security guard is actively rebooting the disabled CCTV breaker panel.</summary>
+        public bool CctvRestoring { get; }
+
+        /// <summary>Normalized progress [0, 1] of an active guard CCTV panel reboot.</summary>
+        public float CctvRestoreProgress { get; }
+
+        /// <summary>Number of times security guards have restored disabled CCTV power during this shift.</summary>
+        public int CctvRestoreCount { get; }
+
         /// <summary>Number of CCTV rigs that see the thief on this tick.</summary>
         public int CameraSightingCount
         {
@@ -315,6 +372,9 @@ namespace HeistSim
         /// <summary>Guard spawn from market-app.js line 82.</summary>
         public static readonly Vector2 GuardStart = new Vector2(13.5f, 4.5f);
 
+        /// <summary>Second security guard spawn covering the south/east departments.</summary>
+        public static readonly Vector2 Guard2Start = new Vector2(24.5f, 22.5f);
+
         /// <summary>Staff spawn from market-app.js line 83.</summary>
         public static readonly Vector2 StaffStart = new Vector2(21.5f, 4.5f);
 
@@ -328,10 +388,14 @@ namespace HeistSim
         private const int StaffReportVisibleFloor = 200;
         private const float StaffSightRange = 4.2f;
         private const float StaffSightHalfAngle = 0.45f;
-        private const float PanelRange = 2.0f;
+        /// <summary>Seconds required to saw through and trip the main CCTV breaker panel.</summary>
+        public const float PowerHold = 5.2f;
+
+        /// <summary>Interaction reach to the CCTV breaker panel in tiles.</summary>
+        public const float PanelRange = 1.65f;
+
         private const float DetaggerRange = 2.3f;
         private const float StealRange = 2.4f;
-        private const float PowerHold = 2.4f;
         private const float DetagHold = 1.8f;
         private const float VitrineHold = 3.2f;
         private const float VitrineFallbackI = 17.2f;
@@ -342,7 +406,16 @@ namespace HeistSim
         private readonly List<BlockedBox> _blockedBoxes = new();
         private readonly List<SightBox> _sightBoxes = new();
         private readonly Vector2[] _guardRoute;
+        private readonly Vector2[] _guard2Route;
         private readonly Vector2[] _staffRoute;
+        private readonly GuardSquadBlackboard _squad;
+        private readonly int _guardCount;
+        private readonly byte[] _navStepMask;
+        private readonly int[] _bfsQueue;
+        private readonly int[] _bfsParent;
+        private readonly int[] _bfsStamp;
+        private int _bfsEpoch;
+        private readonly Func<Vector2, Vector2, bool> _losCheck;
         private readonly HashSet<string> _stolenIds = new(StringComparer.Ordinal);
         private readonly HashSet<string> _taggedIds = new(StringComparer.Ordinal);
         private readonly CameraState[] _cameras = new CameraState[MarketData.Cameras.Length];
@@ -350,13 +423,20 @@ namespace HeistSim
         private GuardArchitecture _arch;
         private GuardFsm _fsm;
         private GuardBt _bt;
+        private GuardStateTree _stateTree1;
+        private GuardFsm _fsm2;
+        private GuardBt _bt2;
+        private GuardStateTree _stateTree2;
         private HeistState _state;
         private Vector2 _player;
         private Vector2 _guard;
+        private Vector2 _guard2;
         private Vector2 _staff;
         private float _guardAngle;
+        private float _guard2Angle;
         private float _staffAngle;
         private int _guardWp;
+        private int _guard2Wp;
         private int _staffWp;
         private int _tick;
         private float _clock;
@@ -369,7 +449,9 @@ namespace HeistSim
         private ChannelResult _lastChannelResult;
         private InteractOutcome _lastInteraction;
         private GuardAction _guardAction;
+        private GuardAction _guard2Action;
         private Vector2? _lastSeenPos;
+        private Vector2 _observedPlayerVelocity;
         private SoundWave _soundWave;
         private int _easAlarm;
         private BackupPhase _backupPhase;
@@ -381,35 +463,65 @@ namespace HeistSim
         private int _searchTicks;
         private bool _arrivedAtTarget;
         private bool _atRouteStart;
+        private int _guard2LostSightTicks;
+        private int _guard2SearchTicks;
+        private bool _guard2ArrivedAtTarget;
+        private bool _guard2AtRouteStart;
         private float? _targetI;
         private float? _targetJ;
         private string _pendingStealId;
+        private int _powerArcStage;
+        private int _cctvRestoreCount;
         private HeistOutcome _outcome;
         private bool _frozenPatrol;
         private NavState _guardNav = new();
+        private NavState _guard2Nav = new();
         private NavState _staffNav = new();
         private NavState _playerNav = new();
         private GuardPercepts _lastPercepts;
+        private GuardPercepts _lastGuard2Percepts;
         private GuardIntent _lastGuardIntent;
+        private GuardIntent _lastGuard2Intent;
         private FsmTransition _lastFsmTransition;
         private IReadOnlyList<BtTraceEntry> _lastBtTrace = Array.Empty<BtTraceEntry>();
         private IReadOnlyList<string> _lastBtAborted = Array.Empty<string>();
+        private StateTreeTickResult _lastStateTree1;
+        private StateTreeTickResult _lastStateTree2;
 
-        /// <summary>Creates a deterministic market game with the given guard profile and controller.</summary>
-        public HeistGame(GuardProfile profile, GuardArchitecture arch = GuardArchitecture.Fsm)
+        /// <summary>Creates a deterministic market game with the given guard profile, controller, and guard count.</summary>
+        public HeistGame(GuardProfile profile, GuardArchitecture arch = GuardArchitecture.Fsm, int guardCount = 1)
         {
             _profile = profile != null ? profile : throw new ArgumentNullException(nameof(profile));
             _arch = arch;
+            _guardCount = Math.Clamp(guardCount, 1, 2);
             _grid = MarketGrid.Build();
             BuildBlockedBoxes();
             BuildSightBoxes();
+            var navCount = _grid.Width * _grid.Height;
+            _navStepMask = new byte[navCount];
+            _bfsQueue = new int[navCount];
+            _bfsParent = new int[navCount];
+            _bfsStamp = new int[navCount];
+            BuildNavStepMask();
+            _losCheck = (a, b) => LineOfSight(a, b, null);
             _guardRoute = ToPoints(MarketData.GuardRoute);
+            _guard2Route = ToPoints(MarketData.Guard2Route);
             _staffRoute = ToPoints(MarketData.StaffRoute);
+            _squad = new GuardSquadBlackboard(_grid);
             Reset();
         }
 
+        /// <summary>Number of stolen items currently carried in the player's bag.</summary>
+        public int BagCount => _state.BagCount;
+
         /// <summary>Active guard controller.</summary>
         public GuardArchitecture Arch => _arch;
+
+        /// <summary>Number of active security guards in this shift (1 or 2).</summary>
+        public int GuardCount => _guardCount;
+
+        /// <summary>True when a second coordinated security guard is active.</summary>
+        public bool HasSecondGuard => _guardCount >= 2;
 
         /// <summary>Active guard personality profile.</summary>
         public GuardProfile Profile => _profile;
@@ -417,14 +529,32 @@ namespace HeistSim
         /// <summary>Authoritative guard facing angle in radians.</summary>
         public float GuardAngle => _guardAngle;
 
+        /// <summary>Authoritative second guard facing angle in radians.</summary>
+        public float Guard2Angle => _guard2Angle;
+
         /// <summary>Authoritative staff facing angle in radians.</summary>
         public float StaffAngle => _staffAngle;
 
-        /// <summary>Most recent sensor percepts evaluated by the guard controller.</summary>
+        /// <summary>Total number of CCTV cameras in the level.</summary>
+        public int CameraCount => _cameras.Length;
+
+        /// <summary>Authoritative current sweep angle in radians for the specified CCTV camera.</summary>
+        public float GetCameraAngle(int index)
+        {
+            return index >= 0 && index < _cameras.Length ? _cameras[index].Angle : 0f;
+        }
+
+        /// <summary>Most recent sensor percepts evaluated by Guard 1.</summary>
         public GuardPercepts LastPercepts => _lastPercepts;
 
-        /// <summary>Most recent locomotion/action intent emitted by the active guard controller.</summary>
+        /// <summary>Most recent sensor percepts evaluated by Guard 2.</summary>
+        public GuardPercepts LastGuard2Percepts => _lastGuard2Percepts;
+
+        /// <summary>Most recent locomotion/action intent emitted by Guard 1.</summary>
         public GuardIntent LastIntent => _lastGuardIntent;
+
+        /// <summary>Most recent locomotion/action intent emitted by Guard 2.</summary>
+        public GuardIntent LastGuard2Intent => _lastGuard2Intent;
 
         /// <summary>Most recent FSM transition rule that fired.</summary>
         public FsmTransition LastFsmTransition => _lastFsmTransition;
@@ -434,6 +564,24 @@ namespace HeistSim
 
         /// <summary>Nodes preempted via Abort() during the most recent Behavior Tree tick.</summary>
         public IReadOnlyList<string> LastBtAborted => _lastBtAborted;
+
+        /// <summary>Most recent StateTree tick result for Guard 1.</summary>
+        public StateTreeTickResult LastStateTree1 => _lastStateTree1;
+
+        /// <summary>Most recent StateTree tick result for Guard 2.</summary>
+        public StateTreeTickResult LastStateTree2 => _lastStateTree2;
+
+        /// <summary>Shared squad blackboard and occupancy grid.</summary>
+        public GuardSquadBlackboard SquadBlackboard => _squad;
+
+        /// <summary>True while a security guard is actively working on rebooting the disabled CCTV panel.</summary>
+        public bool CctvRestoring => _squad.CctvRestoreInProgress;
+
+        /// <summary>Normalized progress [0, 1] of the active guard CCTV reboot.</summary>
+        public float CctvRestoreProgress => _squad.CctvRestoreProgress;
+
+        /// <summary>Count of completed guard CCTV breaker restorations in the current shift.</summary>
+        public int CctvRestoreCount => _cctvRestoreCount;
 
         /// <summary>Origin of the currently expanding acoustic wave, or null when quiet.</summary>
         public Vector2? ActiveSoundOrigin => _soundWave.HasValue ? _soundWave.Origin : (Vector2?)null;
@@ -460,6 +608,9 @@ namespace HeistSim
         /// <summary>Optional external speed multiplier (e.g. haul weight / fatigue); defaults to 1 for parity.</summary>
         public float PlayerSpeedScale { get; set; } = 1f;
 
+        /// <summary>Optional external guard speed multiplier used in live play; defaults to 1 for parity.</summary>
+        public float GuardSpeedScale { get; set; } = 1f;
+
         /// <summary>Run outcome.</summary>
         public HeistOutcome Outcome => _outcome;
 
@@ -468,6 +619,12 @@ namespace HeistSim
 
         /// <summary>Guard position in tiles.</summary>
         public Vector2 GuardPosition => _guard;
+
+        /// <summary>Second guard position in tiles.</summary>
+        public Vector2 Guard2Position => _guard2;
+
+        /// <summary>Second guard state name, lower case.</summary>
+        public string Guard2State => StateName(_guard2Action);
 
         /// <summary>Staff position in tiles.</summary>
         public Vector2 StaffPosition => _staff;
@@ -478,10 +635,13 @@ namespace HeistSim
             _state = new HeistState(MarketData.BagCapacity, MarketData.ObjectiveIds);
             _player = PlayerStart;
             _guard = GuardStart;
+            _guard2 = Guard2Start;
             _staff = StaffStart;
             _guardAngle = 1.5f;
+            _guard2Angle = 3.14f;
             _staffAngle = 1.2f;
             _guardWp = 0;
+            _guard2Wp = 0;
             _staffWp = 0;
             _tick = 0;
             _clock = 0f;
@@ -496,6 +656,7 @@ namespace HeistSim
             _lastChannelResult = ChannelResult.None;
             _lastInteraction = InteractOutcome.None;
             _lastSeenPos = null;
+            _observedPlayerVelocity = Vector2.zero;
             _soundWave = default;
             _easAlarm = 0;
             _backupPhase = BackupPhase.None;
@@ -507,9 +668,15 @@ namespace HeistSim
             _searchTicks = 0;
             _arrivedAtTarget = false;
             _atRouteStart = false;
+            _guard2LostSightTicks = 0;
+            _guard2SearchTicks = 0;
+            _guard2ArrivedAtTarget = false;
+            _guard2AtRouteStart = false;
             _targetI = null;
             _targetJ = null;
             _pendingStealId = null;
+            _powerArcStage = 0;
+            _cctvRestoreCount = 0;
             _outcome = HeistOutcome.None;
             for (var i = 0; i < _cameras.Length; i++)
             {
@@ -518,26 +685,63 @@ namespace HeistSim
             }
 
             _guardNav = new NavState();
+            _guard2Nav = new NavState();
             _staffNav = new NavState();
             _playerNav = new NavState();
             _fsm = new GuardFsm(GuardAction.Patrol, _guardRoute);
             _bt = new GuardBt(GuardFsm.EvalGuard, _guardRoute, "patrol");
+            _stateTree1 = new GuardStateTree(0, _guardRoute, GuardAction.Patrol);
+            _fsm2 = new GuardFsm(GuardAction.Patrol, _guard2Route);
+            _bt2 = new GuardBt(GuardFsm.EvalGuard, _guard2Route, "patrol");
+            _stateTree2 = new GuardStateTree(1, _guard2Route, GuardAction.Patrol);
             _guardAction = GuardAction.Patrol;
+            _guard2Action = GuardAction.Patrol;
+            _lastGuard2Intent = default;
+            _lastGuard2Percepts = default;
+            _lastStateTree1 = default;
+            _lastStateTree2 = default;
+            _squad.Reset();
+            _squad.GuardPositions[0] = _guard;
+            _squad.GuardPositions[1] = _guard2;
         }
 
-        /// <summary>Toggles the guard controller like the browser game's Guard button, leaving the run untouched.</summary>
+        /// <summary>Toggles between FSM and BT controllers, preserving compatibility with the parity suite.</summary>
         public void SwitchArch()
         {
-            if (_arch == GuardArchitecture.Fsm)
+            SetArch(_arch == GuardArchitecture.Fsm ? GuardArchitecture.Bt : GuardArchitecture.Fsm);
+        }
+
+        /// <summary>Switches the active guard controller architecture mid-run while preserving actor state.</summary>
+        public void SetArch(GuardArchitecture arch)
+        {
+            _arch = arch;
+            switch (arch)
             {
-                _arch = GuardArchitecture.Bt;
-                _bt = new GuardBt(GuardFsm.EvalGuard, _guardRoute, StateName(_guardAction));
+                case GuardArchitecture.Bt:
+                    _bt = new GuardBt(GuardFsm.EvalGuard, _guardRoute, StateName(_guardAction));
+                    _bt2 = new GuardBt(GuardFsm.EvalGuard, _guard2Route, StateName(_guard2Action));
+                    break;
+                case GuardArchitecture.StateTree:
+                    _stateTree1 = new GuardStateTree(0, _guardRoute, _guardAction);
+                    _stateTree2 = new GuardStateTree(1, _guard2Route, _guard2Action);
+                    break;
+                default:
+                    _fsm = new GuardFsm(_guardAction, _guardRoute);
+                    _fsm2 = new GuardFsm(_guard2Action, _guard2Route);
+                    break;
             }
-            else
+        }
+
+        /// <summary>Cycles the guard architecture across StateTree, FSM, and BT without resetting the run.</summary>
+        public void CycleArch()
+        {
+            var next = _arch switch
             {
-                _arch = GuardArchitecture.Fsm;
-                _fsm = new GuardFsm(_guardAction, _guardRoute);
-            }
+                GuardArchitecture.StateTree => GuardArchitecture.Fsm,
+                GuardArchitecture.Fsm => GuardArchitecture.Bt,
+                _ => GuardArchitecture.StateTree,
+            };
+            SetArch(next);
         }
 
         /// <summary>Hot-swaps the active guard personality profile mid-run without resetting positions.</summary>
@@ -549,6 +753,12 @@ namespace HeistSim
             }
 
             _profile = profile;
+        }
+
+        /// <summary>Reseeds the squad blackboard PRNG used for randomized corner-inspection detours.</summary>
+        public void ReseedSquad(uint seed)
+        {
+            _squad.Reseed(seed);
         }
 
         /// <summary>Emits a decoy coin acoustic wave at the nearest walkable tile to lure the guard.</summary>
@@ -569,6 +779,7 @@ namespace HeistSim
         {
             _player = new Vector2(i, j);
             _playerNav = new NavState();
+            _observedPlayerVelocity = Vector2.zero;
         }
 
         /// <summary>Moves the guard without walking, mirroring the browser debug setGuard.</summary>
@@ -576,6 +787,13 @@ namespace HeistSim
         {
             _guard = new Vector2(i, j);
             _guardNav = new NavState();
+        }
+
+        /// <summary>Moves the second security guard without walking for deterministic tests.</summary>
+        public void SetGuard2(float i, float j)
+        {
+            _guard2 = new Vector2(i, j);
+            _guard2Nav = new NavState();
         }
 
         /// <summary>Moves the staff member without walking, mirroring the browser debug setStaff.</summary>
@@ -630,7 +848,18 @@ namespace HeistSim
                 Distance(_player, ToVector(MarketData.Detagger.I, MarketData.Detagger.J)) <= DetaggerRange,
                 Distance(_player, ToVector(MarketData.EasGate.I, MarketData.EasGate.J)) <= EasGateRadius,
                 Distance(_player, ToVector(MarketData.EasGate.I, MarketData.EasGate.J)) <= EasGateRadius && _taggedIds.Count > 0,
-                _lastInteraction);
+                _lastInteraction,
+                HasSecondGuard,
+                _guard2,
+                StateName(_guard2Action),
+                _guard2Wp,
+                _arch == GuardArchitecture.StateTree ? _lastStateTree1.PlanName : null,
+                _arch == GuardArchitecture.StateTree && HasSecondGuard ? _lastStateTree2.PlanName : null,
+                _squad.AssignedRoles[0],
+                _squad.AssignedRoles[1],
+                _squad.CctvRestoreInProgress,
+                _squad.CctvRestoreProgress,
+                _cctvRestoreCount);
         }
 
         /// <summary>Builds the CCTV sighting mask from the persisted camera states.</summary>
@@ -669,6 +898,7 @@ namespace HeistSim
             _clock += dt;
             _state.Elapsed += dt;
 
+            var prevPlayer = _player;
             StepPlayer(dt, input, out var moving);
 
             var exit = ToVector(MarketData.EasGate.I, MarketData.EasGate.J);
@@ -701,22 +931,33 @@ namespace HeistSim
             }
 
             var heard = false;
+            var heard2 = false;
             var heardAge = 999;
             var heardI = 0f;
             var heardJ = 0f;
+            var waveOrigin = default(Vector2);
             if (_soundWave.HasValue)
             {
                 _soundWave.Radius += dt * 5.2f;
                 _soundWave.Age += 1;
                 heardAge = _soundWave.Age;
-                var soundDistance = Distance(_guard, _soundWave.Origin);
+                waveOrigin = _soundWave.Origin;
                 var effective = (_soundWave.MaxRadius + 2.5f) * prof.hearing_scale;
-                if (soundDistance <= effective && _soundWave.Age <= prof.sound_memory_ticks)
+                if (_soundWave.Age <= prof.sound_memory_ticks)
                 {
-                    heard = true;
-                    heardI = _soundWave.Origin.x;
-                    heardJ = _soundWave.Origin.y;
-                    _lastSeenPos = _soundWave.Origin;
+                    if (Distance(_guard, waveOrigin) <= effective)
+                    {
+                        heard = true;
+                        heardI = waveOrigin.x;
+                        heardJ = waveOrigin.y;
+                        _lastSeenPos = waveOrigin;
+                    }
+
+                    if (HasSecondGuard && Distance(_guard2, waveOrigin) <= effective)
+                    {
+                        heard2 = true;
+                        _lastSeenPos = waveOrigin;
+                    }
                 }
 
                 if (_soundWave.Radius > _soundWave.MaxRadius)
@@ -756,24 +997,34 @@ namespace HeistSim
 
             StepStaff(dt, tick);
 
-            var dx = _player.x - _guard.x;
-            var dy = _player.y - _guard.y;
-            var playerDistance = MathF.Sqrt(dx * dx + dy * dy);
-            var rel = GuardPerception.NormalizeAngle(MathF.Atan2(dy, dx) - _guardAngle);
-            var fov = prof.fov_distance * (1f + Math.Max(0, _state.Tier - 2) * 0.08f);
-            var inCone = playerDistance <= fov && MathF.Abs(rel) <= prof.fov_half_angle;
-            var close = playerDistance <= prof.close_proximity;
-            var guardSees = (inCone || close) && LineOfSight(_guard, _player, null);
-            _visible = guardSees || cameraSpot || (_staffAlert > 0 && _staffAlert > StaffReportVisibleFloor);
+            var guardSees = EvaluateGuardSight(_guard, _guardAngle, prof, out var playerDistance, out var rel);
+            var dist2 = float.MaxValue;
+            var rel2 = 0f;
+            var guard2Sees = HasSecondGuard && EvaluateGuardSight(_guard2, _guard2Angle, prof, out dist2, out rel2);
+            var anyGuardSees = guardSees || guard2Sees;
+            var minGuardDist = HasSecondGuard ? MathF.Min(playerDistance, dist2) : playerDistance;
+
+            _visible = anyGuardSees || cameraSpot || (_staffAlert > 0 && _staffAlert > StaffReportVisibleFloor);
             _firstDetectionEdge = _visible && !_wasVisible;
             _wasVisible = _visible;
+
+            var invDt = dt > 1e-4f ? 1f / dt : 0f;
+            var instantVel = (_player - prevPlayer) * invDt;
+            if (_visible)
+            {
+                _observedPlayerVelocity = Vector2.Lerp(_observedPlayerVelocity, instantVel, 0.45f);
+            }
+            else
+            {
+                _observedPlayerVelocity *= 0.94f;
+            }
 
             var motion = moving && InMotionZone(_player);
             var staffReport = _staffAlert > StaffReportVisibleFloor && !_state.CamerasDisabled;
             var detection = Detection.Contribution(
                 new DetectionInput(
-                    guardSees,
-                    playerDistance <= prof.close_proximity * 1.5f,
+                    anyGuardSees,
+                    minGuardDist <= prof.close_proximity * 1.5f,
                     seenCameras,
                     staffReport,
                     input.Sprint && moving,
@@ -796,7 +1047,8 @@ namespace HeistSim
 
             _state.AddHeat(detection);
 
-            if (_visible)
+            var g1PerceptVisible = _arch == GuardArchitecture.StateTree ? guardSees : _visible;
+            if (g1PerceptVisible || (_arch != GuardArchitecture.StateTree && _visible))
             {
                 _lastSeenPos = _player;
                 _lostSightTicks = 0;
@@ -804,6 +1056,11 @@ namespace HeistSim
             }
             else
             {
+                if (_visible)
+                {
+                    _lastSeenPos = _player;
+                }
+
                 _lostSightTicks += 1;
                 if (_guardAction == GuardAction.Search)
                 {
@@ -837,8 +1094,8 @@ namespace HeistSim
                 tick,
                 _guard,
                 _guardAngle,
-                _visible,
-                _visible ? _player : (Vector2?)null,
+                g1PerceptVisible,
+                g1PerceptVisible ? _player : (Vector2?)null,
                 playerDistance,
                 rel,
                 sensedSound,
@@ -851,7 +1108,7 @@ namespace HeistSim
                 (int)_hp);
             _lastPercepts = percepts;
 
-            if (_state.Tier >= 5 && guardSees && playerDistance < 2.4f)
+            if (_state.Tier >= 5 && ((guardSees && playerDistance < 2.4f) || (guard2Sees && dist2 < 2.4f)))
             {
                 _outcome = HeistOutcome.Busted;
                 return;
@@ -863,6 +1120,29 @@ namespace HeistSim
             if (channelResult == ChannelResult.Done && active != null)
             {
                 ApplyChannel(active);
+            }
+            else if (channelResult == ChannelResult.Running && active != null && active.Kind == "power")
+            {
+                var frac = active.Progress / MathF.Max(0.01f, active.Hold);
+                var panelPos = ToVector(MarketData.Panel.I, MarketData.Panel.J);
+                if (frac >= 0.35f && _powerArcStage < 1)
+                {
+                    _powerArcStage = 1;
+                    EmitSound(panelPos.x, panelPos.y, 6.0f);
+                    _squad.InjectSound(panelPos, 0.70f);
+                    _state.AddHeat(0.04f);
+                }
+                else if (frac >= 0.72f && _powerArcStage < 2)
+                {
+                    _powerArcStage = 2;
+                    EmitSound(panelPos.x, panelPos.y, 7.2f);
+                    _squad.InjectSound(panelPos, 0.85f);
+                    _state.AddHeat(0.05f);
+                }
+            }
+            else if (_state.Channel == null)
+            {
+                _powerArcStage = 0;
             }
 
             if (_stolenValue >= MarketData.Quota)
@@ -890,6 +1170,65 @@ namespace HeistSim
                 _state.Phase = "exfil";
             }
 
+            // Update shared squad tactical blackboard & occupancy probability wave
+            _squad.CamerasDisabled = _state.CamerasDisabled;
+            _squad.VitrineOpen = _state.VitrineOpen;
+            _squad.EasAlarmActive = _easAlarm > 0;
+            _squad.Heat = _state.Heat;
+            _squad.HeatTier = _state.Tier;
+            _squad.GuardPositions[0] = _guard;
+            _squad.GuardActions[0] = _guardAction;
+            _squad.GuardPositions[1] = _guard2;
+            _squad.GuardActions[1] = _guard2Action;
+
+            if (_visible)
+            {
+                _squad.SeedSighting(_player, _observedPlayerVelocity, tick);
+            }
+            else if ((heard || heard2) && heardAge == 1)
+            {
+                _squad.InjectSound(waveOrigin);
+            }
+
+            if (tick % 6 == 0)
+            {
+                var cornerRange = prof.fov_distance * (1f + Math.Max(0, _state.Tier - 2) * 0.08f);
+                _squad.RecordVisionStaleness(_guard, _guardAngle, prof.fov_half_angle, cornerRange, tick, _losCheck);
+                if (HasSecondGuard)
+                {
+                    _squad.RecordVisionStaleness(_guard2, _guard2Angle, prof.fov_half_angle, cornerRange, tick, _losCheck);
+                }
+            }
+
+            if (!_visible && tick % 4 == 0)
+            {
+                _squad.DiffuseStep(tick: tick);
+                var fovRange = prof.fov_distance * (1f + Math.Max(0, _state.Tier - 2) * 0.08f);
+                _squad.ClearVisionCone(_guard, _guardAngle, prof.fov_half_angle, fovRange, _losCheck);
+                if (HasSecondGuard)
+                {
+                    _squad.ClearVisionCone(_guard2, _guard2Angle, prof.fov_half_angle, fovRange, _losCheck);
+                }
+
+                if (!_state.CamerasDisabled)
+                {
+                    for (var i = 0; i < _cameras.Length; i++)
+                    {
+                        var cam = _cameras[i];
+                        _squad.ClearVisionCone(
+                            new Vector2((float)cam.Def.I, (float)cam.Def.J),
+                            cam.Angle,
+                            (float)cam.Def.HalfAngle,
+                            (float)cam.Def.Range,
+                            _losCheck);
+                    }
+                }
+            }
+
+            _squad.UpdateSquadRoles(tick, _guardCount, guardSees, guard2Sees, _player);
+            _squad.CctvRestoreInProgress = false;
+            _squad.CctvRestoreProgress = 0f;
+
             if (_arch == GuardArchitecture.Fsm)
             {
                 var (intent, transition) = _fsm.Tick(percepts, prof);
@@ -897,7 +1236,7 @@ namespace HeistSim
                 _lastFsmTransition = transition;
                 _guardAction = _fsm.State;
             }
-            else
+            else if (_arch == GuardArchitecture.Bt)
             {
                 var result = _bt.Tick(percepts, prof);
                 _lastGuardIntent = result.Intent;
@@ -905,10 +1244,125 @@ namespace HeistSim
                 _lastBtAborted = result.AbortedNodes;
                 _guardAction = ActionOf(result.ActiveLeaf);
             }
+            else
+            {
+                _lastStateTree1 = _stateTree1.Tick(percepts, prof, _squad, _grid);
+                _lastGuardIntent = _lastStateTree1.Intent;
+                _guardAction = _lastStateTree1.Action;
+                _guardWp = _stateTree1.WpIndex;
+            }
 
-            if (StepGuard(dt))
+            if (StepGuardAgent(
+                ref _guard,
+                ref _guardAngle,
+                ref _guardWp,
+                _guardRoute,
+                _guardNav,
+                _guardAction,
+                _lastGuardIntent,
+                ref _arrivedAtTarget,
+                ref _atRouteStart,
+                dt,
+                otherGuardPos: HasSecondGuard ? (Vector2?)_guard2 : null,
+                guardPassSign: 1))
             {
                 return;
+            }
+
+            if (HasSecondGuard)
+            {
+                var g2PerceptVisible = _arch == GuardArchitecture.StateTree ? guard2Sees : _visible;
+                if (g2PerceptVisible)
+                {
+                    _guard2LostSightTicks = 0;
+                    _guard2SearchTicks = 0;
+                }
+                else
+                {
+                    _guard2LostSightTicks += 1;
+                    if (_guard2Action == GuardAction.Search)
+                    {
+                        _guard2SearchTicks += 1;
+                    }
+                    else
+                    {
+                        _guard2SearchTicks = 0;
+                    }
+                }
+
+                SoundEvent? g2Sound = heard2 ? new SoundEvent(waveOrigin, heardAge, 1f) : (SoundEvent?)null;
+                var g2InvestigateTarget = g2Sound.HasValue
+                    ? g2Sound.Value.Origin
+                    : (_lastGuard2Intent.Target ?? _lastSeenPos);
+                _guard2ArrivedAtTarget = _guard2Action == GuardAction.Investigate
+                    && g2InvestigateTarget.HasValue
+                    && Distance(_guard2, g2InvestigateTarget.Value) < 0.8f;
+                _guard2AtRouteStart = _guard2Action == GuardAction.Return
+                    && Distance(_guard2, _guard2Route[_guard2Wp]) < 0.85f;
+
+                var percepts2 = new GuardPercepts(
+                    tick,
+                    _guard2,
+                    _guard2Angle,
+                    g2PerceptVisible,
+                    g2PerceptVisible ? _player : (Vector2?)null,
+                    dist2,
+                    rel2,
+                    g2Sound,
+                    _state.Heat,
+                    _lastSeenPos,
+                    _guard2AtRouteStart,
+                    _guard2ArrivedAtTarget,
+                    _guard2LostSightTicks,
+                    _guard2SearchTicks,
+                    (int)_hp);
+                _lastGuard2Percepts = percepts2;
+
+                if (_arch == GuardArchitecture.Fsm)
+                {
+                    var (intent2, _) = _fsm2.Tick(percepts2, prof);
+                    _lastGuard2Intent = intent2;
+                    _guard2Action = _fsm2.State;
+                }
+                else if (_arch == GuardArchitecture.Bt)
+                {
+                    var result2 = _bt2.Tick(percepts2, prof);
+                    _lastGuard2Intent = result2.Intent;
+                    _guard2Action = ActionOf(result2.ActiveLeaf);
+                }
+                else
+                {
+                    _lastStateTree2 = _stateTree2.Tick(percepts2, prof, _squad, _grid);
+                    _lastGuard2Intent = _lastStateTree2.Intent;
+                    _guard2Action = _lastStateTree2.Action;
+                    _guard2Wp = _stateTree2.WpIndex;
+                }
+
+                if (StepGuardAgent(
+                    ref _guard2,
+                    ref _guard2Angle,
+                    ref _guard2Wp,
+                    _guard2Route,
+                    _guard2Nav,
+                    _guard2Action,
+                    _lastGuard2Intent,
+                    ref _guard2ArrivedAtTarget,
+                    ref _guard2AtRouteStart,
+                    dt,
+                    otherGuardPos: _guard,
+                    guardPassSign: -1))
+                {
+                    return;
+                }
+            }
+
+            if (_squad.ConsumeCamerasRestoreRequest())
+            {
+                _state.CamerasDisabled = false;
+                _squad.CamerasDisabled = false;
+                _cctvRestoreCount++;
+                _powerArcStage = 0;
+                EmitSound((float)MarketData.Panel.I, (float)MarketData.Panel.J, 2.2f);
             }
 
             if (input.Action)
@@ -917,40 +1371,77 @@ namespace HeistSim
             }
         }
 
-        private bool StepGuard(float dt)
+        private bool EvaluateGuardSight(Vector2 guardPos, float guardAngle, GuardProfile prof, out float playerDistance, out float rel)
+        {
+            var dx = _player.x - guardPos.x;
+            var dy = _player.y - guardPos.y;
+            playerDistance = MathF.Sqrt(dx * dx + dy * dy);
+            rel = GuardPerception.NormalizeAngle(MathF.Atan2(dy, dx) - guardAngle);
+            var fov = prof.fov_distance * (1f + Math.Max(0, _state.Tier - 2) * 0.08f);
+            var inCone = playerDistance <= fov && MathF.Abs(rel) <= prof.fov_half_angle;
+            var close = playerDistance <= prof.close_proximity;
+            return (inCone || close) && LineOfSight(guardPos, _player, null);
+        }
+
+        private bool StepGuardAgent(
+            ref Vector2 guardPos,
+            ref float guardAngle,
+            ref int guardWp,
+            Vector2[] route,
+            NavState nav,
+            GuardAction action,
+            GuardIntent intent,
+            ref bool arrivedAtTarget,
+            ref bool atRouteStart,
+            float dt,
+            Vector2? otherGuardPos = null,
+            int guardPassSign = 1)
         {
             var prof = _profile;
-            var gi = _guard.x;
-            var gj = _guard.y;
+            var gi = guardPos.x;
+            var gj = guardPos.y;
             var speed = prof.patrol_speed * (1f + Math.Max(0, _state.Tier - 2) * 0.05f);
-            switch (_guardAction)
+            switch (action)
             {
                 case GuardAction.Patrol:
-                    var waypoint = _guardRoute[_guardWp];
-                    gi = waypoint.x;
-                    gj = waypoint.y;
-                    if (Distance(_guard, waypoint) < 0.65f)
+                    if (_arch == GuardArchitecture.StateTree && intent.Target.HasValue)
                     {
-                        _guardWp = (_guardWp + 1) % _guardRoute.Length;
+                        gi = intent.Target.Value.x;
+                        gj = intent.Target.Value.y;
+                        if (intent.Speed <= 0.01f)
+                        {
+                            guardAngle += dt * 2.1f;
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        var waypoint = route[guardWp];
+                        gi = waypoint.x;
+                        gj = waypoint.y;
+                        if (Distance(guardPos, waypoint) < 0.65f)
+                        {
+                            guardWp = (guardWp + 1) % route.Length;
+                        }
                     }
 
                     break;
                 case GuardAction.Investigate:
-                    var investigate = _lastGuardIntent.Target ?? _lastSeenPos ?? _guardRoute[_guardWp];
+                    var investigate = intent.Target ?? _lastSeenPos ?? route[guardWp];
                     gi = investigate.x;
                     gj = investigate.y;
-                    speed = _lastGuardIntent.Speed > 0.01f ? _lastGuardIntent.Speed : prof.investigate_speed;
-                    _arrivedAtTarget = Distance(_guard, investigate) < 0.8f;
+                    speed = intent.Speed > 0.01f ? intent.Speed : prof.investigate_speed;
+                    arrivedAtTarget = Distance(guardPos, investigate) < 0.8f;
                     break;
                 case GuardAction.Chase:
-                    var chase = _lastGuardIntent.Target ?? (_visible ? _player : _lastSeenPos ?? _player);
+                    var chase = intent.Target ?? (_visible ? _player : _lastSeenPos ?? _player);
                     gi = chase.x;
                     gj = chase.y;
-                    speed = _lastGuardIntent.Speed > 0.01f ? _lastGuardIntent.Speed : prof.chase_speed;
+                    speed = intent.Speed > 0.01f ? intent.Speed : prof.chase_speed;
                     _hp = Math.Min(100f, _hp + dt * 4f);
                     break;
                 case GuardAction.Attack:
-                    _guardAngle = MathF.Atan2(_player.y - _guard.y, _player.x - _guard.x);
+                    guardAngle = MathF.Atan2(_player.y - guardPos.y, _player.x - guardPos.x);
                     _hp = Math.Max(0f, _hp - dt * 58f);
                     if (_hp <= 0f)
                     {
@@ -960,8 +1451,8 @@ namespace HeistSim
 
                     return false;
                 case GuardAction.Search:
-                    var searchTarget = _lastGuardIntent.Target ?? _lastSeenPos;
-                    if (searchTarget.HasValue && Distance(_guard, searchTarget.Value) > 0.75f)
+                    var searchTarget = intent.Target ?? _lastSeenPos;
+                    if (searchTarget.HasValue && Distance(guardPos, searchTarget.Value) > 0.75f)
                     {
                         gi = searchTarget.Value.x;
                         gj = searchTarget.Value.y;
@@ -969,36 +1460,107 @@ namespace HeistSim
                         break;
                     }
 
-                    // Once at the last-seen spot, sweep head side-to-side to check around corners
-                    _guardAngle += dt * 2.8f;
+                    // Once at the target spot, sweep head side-to-side to check around corners
+                    guardAngle += dt * 2.8f;
                     return false;
                 case GuardAction.Return:
-                    var start = _guardRoute[_guardWp];
+                    var start = (_arch == GuardArchitecture.StateTree && intent.Target.HasValue)
+                        ? intent.Target.Value
+                        : route[guardWp];
                     gi = start.x;
                     gj = start.y;
                     speed = prof.patrol_speed;
-                    _atRouteStart = Distance(_guard, start) < 0.85f;
+                    atRouteStart = Distance(guardPos, start) < 0.85f;
                     break;
                 default:
                     return false;
             }
 
-            var fdi = gi - _guard.x;
-            var fdj = gj - _guard.y;
+            var fdi = gi - guardPos.x;
+            var fdj = gj - guardPos.y;
             var fd = MathF.Sqrt(fdi * fdi + fdj * fdj);
-            var prevGuard = _guard;
-            if (!_frozenPatrol && fd > 0.08f && MoveToward(_guardNav, ref _guard, gi, gj, TileSpeed * speed * dt))
+            var prevGuard = guardPos;
+            var scaledSpeed = speed * Math.Clamp(GuardSpeedScale, 0.5f, 1.8f);
+            if (!_frozenPatrol && fd > 0.08f && MoveToward(nav, ref guardPos, gi, gj, TileSpeed * scaledSpeed * dt))
             {
-                var stepDx = _guard.x - prevGuard.x;
-                var stepDy = _guard.y - prevGuard.y;
-                if (!MarketGrid.SameRoom((int)prevGuard.x, (int)prevGuard.y, (int)gi, (int)gj)
-                    && (stepDx * stepDx + stepDy * stepDy) > 1e-6f)
+                var stepDx = guardPos.x - prevGuard.x;
+                var stepDy = guardPos.y - prevGuard.y;
+                var stepMagSq = stepDx * stepDx + stepDy * stepDy;
+                if (otherGuardPos.HasValue && stepMagSq > 1e-6f)
                 {
-                    _guardAngle = MathF.Atan2(stepDy, stepDx);
+                    var sepX = guardPos.x - otherGuardPos.Value.x;
+                    var sepY = guardPos.y - otherGuardPos.Value.y;
+                    var sepDist = MathF.Sqrt(sepX * sepX + sepY * sepY);
+                    if (sepDist < 0.80f)
+                    {
+                        var stepLen = MathF.Sqrt(stepMagSq);
+                        var perpX = -stepDy / stepLen;
+                        var perpY = stepDx / stepLen;
+                        var lateralDot = sepX * perpX + sepY * perpY;
+                        float side;
+                        if (MathF.Abs(lateralDot) > 0.03f)
+                        {
+                            side = lateralDot >= 0f ? 1f : -1f;
+                        }
+                        else if (sepDist < 0.25f)
+                        {
+                            side = guardPassSign;
+                        }
+                        else
+                        {
+                            side = 1f;
+                        }
+
+                        var latX = perpX * side;
+                        var latY = perpY * side;
+                        if (sepDist > 0.02f)
+                        {
+                            var ax = sepX / sepDist;
+                            var ay = sepY / sepDist;
+                            var bx = latX * 0.78f + ax * 0.22f;
+                            var by = latY * 0.78f + ay * 0.22f;
+                            var bMag = MathF.Sqrt(bx * bx + by * by);
+                            if (bMag > 1e-4f)
+                            {
+                                latX = bx / bMag;
+                                latY = by / bMag;
+                            }
+                        }
+
+                        var nudge = MathF.Min(0.35f * stepLen, (0.80f - sepDist) * 0.28f);
+                        var nx = guardPos.x + latX * nudge;
+                        var ny = guardPos.y + latY * nudge;
+                        if (CanWalk(guardPos.x, guardPos.y, nx, ny))
+                        {
+                            guardPos = new Vector2(nx, ny);
+                            stepDx = guardPos.x - prevGuard.x;
+                            stepDy = guardPos.y - prevGuard.y;
+                            stepMagSq = stepDx * stepDx + stepDy * stepDy;
+                        }
+                    }
+                }
+
+                float desiredAngle;
+                if (action == GuardAction.Chase && LineOfSight(guardPos, new Vector2(gi, gj), null))
+                {
+                    desiredAngle = MathF.Atan2(gj - guardPos.y, gi - guardPos.x);
+                }
+                else if (stepMagSq > 1e-6f)
+                {
+                    desiredAngle = MathF.Atan2(stepDy, stepDx);
                 }
                 else
                 {
-                    _guardAngle = MathF.Atan2(fdj, fdi);
+                    desiredAngle = MathF.Atan2(fdj, fdi);
+                }
+
+                var angleDiff = GuardPerception.NormalizeAngle(desiredAngle - guardAngle);
+                var maxTurn = 11.5f * dt;
+                guardAngle = GuardPerception.NormalizeAngle(guardAngle + Math.Clamp(angleDiff, -maxTurn, maxTurn));
+
+                if (_arch == GuardArchitecture.StateTree && action == GuardAction.Search)
+                {
+                    guardAngle += MathF.Sin(_clock * 5.2f) * 0.34f;
                 }
             }
 
@@ -1109,9 +1671,13 @@ namespace HeistSim
                     * (input.Crouch ? CrouchMultiplier : 1f)
                     * dt;
                 MoveEntity(ref _player, di / length, dj / length, step);
-                if (input.Sprint && _tick % 28 == 0)
+                if (input.Sprint && _tick % 20 == 0)
                 {
-                    EmitSound(_player.x, _player.y, 4.5f);
+                    EmitSound(_player.x, _player.y, 6.0f);
+                }
+                else if (!input.Crouch && !input.Sprint && _tick % 18 == 0 && IsAlertGuardNearPlayer(2.8f))
+                {
+                    _squad.InjectSound(_player, 0.55f);
                 }
             }
             else if (_targetI.HasValue && _targetJ.HasValue)
@@ -1134,6 +1700,23 @@ namespace HeistSim
 
                 _pendingStealId = null;
             }
+        }
+
+        private bool IsAlertGuardNearPlayer(float maxRange)
+        {
+            var g1Alert = _guardAction == GuardAction.Investigate || _guardAction == GuardAction.Search || _guardAction == GuardAction.Chase;
+            if (g1Alert && Distance(_guard, _player) <= maxRange)
+            {
+                return true;
+            }
+
+            if (!HasSecondGuard)
+            {
+                return false;
+            }
+
+            var g2Alert = _guard2Action == GuardAction.Investigate || _guard2Action == GuardAction.Search || _guard2Action == GuardAction.Chase;
+            return g2Alert && Distance(_guard2, _player) <= maxRange;
         }
 
         private void ApplyChannel(ChannelState active)
@@ -1160,7 +1743,11 @@ namespace HeistSim
                 case "power":
                     _state.CamerasDisabled = true;
                     _state.CompleteObjective("power");
-                    EmitSound((float)MarketData.Panel.I, (float)MarketData.Panel.J, 2.4f);
+                    _powerArcStage = 0;
+                    var panelPos = ToVector(MarketData.Panel.I, MarketData.Panel.J);
+                    EmitSound(panelPos.x, panelPos.y, 9.5f);
+                    _squad.InjectSound(panelPos, 0.95f);
+                    _state.AddHeat(0.14f);
                     return;
                 case "vitrine":
                     _state.VitrineOpen = true;
@@ -1229,6 +1816,7 @@ namespace HeistSim
                     return InteractOutcome.PanelOutOfReach;
                 }
 
+                _powerArcStage = 0;
                 _state.StartChannel("power", null, PowerHold);
                 return InteractOutcome.Started;
             }
@@ -1511,8 +2099,54 @@ namespace HeistSim
             return false;
         }
 
+        private bool HasClearWalkLine(Vector2 from, Vector2 to)
+        {
+            var di = to.x - from.x;
+            var dj = to.y - from.y;
+            var dist = MathF.Sqrt(di * di + dj * dj);
+            if (dist <= 0.05f)
+            {
+                return true;
+            }
+
+            var steps = Math.Max(2, (int)MathF.Ceiling(dist / 0.24f));
+            var prevX = from.x;
+            var prevY = from.y;
+            for (var s = 1; s <= steps; s++)
+            {
+                var u = (float)s / steps;
+                var nextX = from.x + di * u;
+                var nextY = from.y + dj * u;
+                if (!CanWalk(prevX, prevY, nextX, nextY))
+                {
+                    return false;
+                }
+
+                prevX = nextX;
+                prevY = nextY;
+            }
+
+            return true;
+        }
+
         private bool MoveToward(NavState nav, ref Vector2 position, float goalI, float goalJ, float stepLength)
         {
+            var goal = new Vector2(goalI, goalJ);
+            if (HasClearWalkLine(position, goal))
+            {
+                nav.HasGoal = false;
+                nav.Path = null;
+                nav.RepathCooldown = 0;
+                nav.LastPathFailed = false;
+                var di = goalI - position.x;
+                var dj = goalJ - position.y;
+                var d = MathF.Sqrt(di * di + dj * dj);
+                if (d > 1e-4f && MoveEntity(ref position, di / d, dj / d, MathF.Min(stepLength, d)))
+                {
+                    return true;
+                }
+            }
+
             if (FollowPath(nav, ref position, goalI, goalJ, stepLength))
             {
                 return true;
@@ -1523,34 +2157,103 @@ namespace HeistSim
 
         private bool FollowPath(NavState nav, ref Vector2 position, float goalI, float goalJ, float stepLength)
         {
+            if (nav.RepathCooldown > 0)
+            {
+                nav.RepathCooldown--;
+            }
+
+            var curX = FloorDiv(position.x, 1f);
+            var curY = FloorDiv(position.y, 1f);
             var goalX = FloorDiv(goalI, 1f);
             var goalY = FloorDiv(goalJ, 1f);
-            if (!nav.HasGoal || nav.GoalX != goalX || nav.GoalY != goalY)
+            if (curX == goalX && curY == goalY)
             {
-                nav.Path = FindPathFallback(FloorDiv(position.x, 1f), FloorDiv(position.y, 1f), goalX, goalY);
-                nav.Index = 0;
+                nav.HasGoal = false;
+                nav.Path = null;
+                nav.LastPathFailed = false;
+                var sdi = goalI - position.x;
+                var sdj = goalJ - position.y;
+                var sd = MathF.Sqrt(sdi * sdi + sdj * sdj);
+                return sd > 1e-4f && MoveEntity(ref position, sdi / sd, sdj / sd, MathF.Min(stepLength, sd));
+            }
+
+            var goalChanged = !nav.HasGoal || nav.GoalX != goalX || nav.GoalY != goalY;
+            var goalJump = Math.Abs(nav.GoalX - goalX) + Math.Abs(nav.GoalY - goalY);
+            var shouldRepath = (!nav.HasGoal || nav.Path == null)
+                ? (!nav.LastPathFailed || nav.GoalX != goalX || nav.GoalY != goalY || nav.RepathCooldown <= 0)
+                : (goalChanged && (nav.RepathCooldown <= 0 || goalJump > 3));
+
+            if (shouldRepath)
+            {
+                nav.Path = FindPathFallback(curX, curY, goalX, goalY);
+                nav.Index = nav.Path != null && nav.Path.Count > 1 ? 1 : 0;
                 nav.GoalX = goalX;
                 nav.GoalY = goalY;
-                nav.HasGoal = true;
+                nav.LastPathFailed = nav.Path == null || nav.Path.Count == 0;
+                nav.HasGoal = !nav.LastPathFailed;
+                nav.RepathCooldown = nav.LastPathFailed ? 6 : 5;
+            }
+
+            while (nav.Path != null && nav.Index < nav.Path.Count)
+            {
+                var isFinal = nav.Index == nav.Path.Count - 1;
+                var curTile = nav.Path[nav.Index];
+                var tx = isFinal ? goalI : curTile.X + 0.5f;
+                var ty = isFinal ? goalJ : curTile.Y + 0.5f;
+                var cdi = tx - position.x;
+                var cdj = ty - position.y;
+                var threshSq = isFinal ? 0.0064f : 0.0625f;
+                if (cdi * cdi + cdj * cdj >= threshSq)
+                {
+                    break;
+                }
+
+                nav.Index++;
             }
 
             if (nav.Path == null || nav.Path.Count == 0 || nav.Index >= nav.Path.Count)
             {
                 nav.HasGoal = false;
                 nav.Path = null;
+                if (nav.RepathCooldown <= 0)
+                {
+                    nav.RepathCooldown = 6;
+                }
+
                 return false;
             }
 
+            // String-pull lookahead: cut diagonally across clear visible chords instead of 4-way tile steps
+            var maxLook = Math.Min(nav.Path.Count - 1, nav.Index + 6);
+            for (var k = maxLook; k > nav.Index; k--)
+            {
+                var isFinal = k == nav.Path.Count - 1;
+                var cand = isFinal
+                    ? new Vector2(goalI, goalJ)
+                    : new Vector2(nav.Path[k].X + 0.5f, nav.Path[k].Y + 0.5f);
+                if (HasClearWalkLine(position, cand))
+                {
+                    var ldi = cand.x - position.x;
+                    var ldj = cand.y - position.y;
+                    var ld = MathF.Sqrt(ldi * ldi + ldj * ldj);
+                    if (ld > 1e-4f && MoveEntity(ref position, ldi / ld, ldj / ld, MathF.Min(stepLength, ld)))
+                    {
+                        nav.Index = k;
+                        return true;
+                    }
+                }
+            }
+
+            var isLast = nav.Index == nav.Path.Count - 1;
             var tile = nav.Path[nav.Index];
-            var wx = tile.X + 0.5f;
-            var wy = tile.Y + 0.5f;
+            var wx = isLast ? goalI : tile.X + 0.5f;
+            var wy = isLast ? goalJ : tile.Y + 0.5f;
             var di = wx - position.x;
             var dj = wy - position.y;
             var d = MathF.Sqrt(di * di + dj * dj);
-            if (d < 0.2f)
+            if (d <= 1e-4f)
             {
-                nav.Index += 1;
-                return nav.Index < nav.Path.Count;
+                return false;
             }
 
             return MoveEntity(ref position, di / d, dj / d, MathF.Min(stepLength, d));
@@ -1610,87 +2313,131 @@ namespace HeistSim
 
         private List<GridPos> FindPathFallback(int fromX, int fromY, int goalX, int goalY)
         {
-            var start = new GridPos(fromX, fromY);
-            if (start.X == goalX && start.Y == goalY)
+            if (fromX == goalX && fromY == goalY)
             {
-                return new List<GridPos> { start };
+                return new List<GridPos> { new GridPos(fromX, fromY) };
             }
 
-            var queue = new Queue<GridPos>();
-            var previous = new Dictionary<GridPos, GridPos>();
-            var visited = new HashSet<GridPos> { start };
-            queue.Enqueue(start);
-            GridPos best = start;
+            var w = _grid.Width;
+            var h = _grid.Height;
+            if (fromX < 0 || fromY < 0 || fromX >= w || fromY >= h)
+            {
+                return null;
+            }
+
+            if (++_bfsEpoch == int.MaxValue)
+            {
+                Array.Clear(_bfsStamp, 0, _bfsStamp.Length);
+                _bfsEpoch = 1;
+            }
+
+            var epoch = _bfsEpoch;
+            var startIdx = fromY * w + fromX;
+            var goalInBounds = goalX >= 0 && goalY >= 0 && goalX < w && goalY < h;
+            var goalIdx = goalInBounds ? goalY * w + goalX : -1;
+            var head = 0;
+            var tail = 0;
+            _bfsStamp[startIdx] = epoch;
+            _bfsParent[startIdx] = -1;
+            _bfsQueue[tail++] = startIdx;
+
+            var bestIdx = startIdx;
             var bestDistance = float.MaxValue;
-            while (queue.Count > 0)
-            {
-                var at = queue.Dequeue();
-                foreach (var next in Neighbours(at))
-                {
-                    if (!visited.Add(next))
-                    {
-                        continue;
-                    }
+            var foundGoal = false;
 
-                    previous[next] = at;
-                    queue.Enqueue(next);
-                    var ddx = next.X + 0.5f - goalX - 0.5f;
-                    var ddy = next.Y + 0.5f - goalY - 0.5f;
-                    var distance = ddx * ddx + ddy * ddy;
-                    if (distance < bestDistance)
-                    {
-                        bestDistance = distance;
-                        best = next;
-                    }
+            while (head < tail)
+            {
+                var at = _bfsQueue[head++];
+                var mask = _navStepMask[at];
+                if (mask == 0)
+                {
+                    continue;
                 }
+
+                if ((mask & 1) != 0 && ProcessBfsNeighbor(at, at + 1, w, goalX, goalY, goalIdx, epoch, ref tail, ref bestIdx, ref bestDistance, ref foundGoal)) break;
+                if ((mask & 2) != 0 && ProcessBfsNeighbor(at, at - 1, w, goalX, goalY, goalIdx, epoch, ref tail, ref bestIdx, ref bestDistance, ref foundGoal)) break;
+                if ((mask & 4) != 0 && ProcessBfsNeighbor(at, at + w, w, goalX, goalY, goalIdx, epoch, ref tail, ref bestIdx, ref bestDistance, ref foundGoal)) break;
+                if ((mask & 8) != 0 && ProcessBfsNeighbor(at, at - w, w, goalX, goalY, goalIdx, epoch, ref tail, ref bestIdx, ref bestDistance, ref foundGoal)) break;
             }
 
-            var goal = new GridPos(goalX, goalY);
-            if (!visited.Contains(goal))
+            var targetIdx = foundGoal ? goalIdx : bestIdx;
+            if (targetIdx == startIdx)
             {
-                goal = best;
-                if (goal.Equals(start) && previous.Count == 0)
-                {
-                    return null;
-                }
+                return null;
             }
 
             var path = new List<GridPos>();
-            var current = goal;
-            while (!current.Equals(start))
+            var current = targetIdx;
+            while (current != startIdx)
             {
-                path.Add(current);
-                if (!previous.TryGetValue(current, out current))
-                {
-                    return null;
-                }
+                var cy = current / w;
+                var cx = current - cy * w;
+                path.Add(new GridPos(cx, cy));
+                current = _bfsParent[current];
             }
 
-            path.Add(start);
+            path.Add(new GridPos(fromX, fromY));
             path.Reverse();
             return path;
         }
 
-        private IEnumerable<GridPos> Neighbours(GridPos at)
+        private bool ProcessBfsNeighbor(
+            int fromIdx,
+            int nextIdx,
+            int w,
+            int goalX,
+            int goalY,
+            int goalIdx,
+            int epoch,
+            ref int tail,
+            ref int bestIdx,
+            ref float bestDistance,
+            ref bool foundGoal)
         {
-            if (CanStep(at.X, at.Y, at.X + 1, at.Y))
+            if (_bfsStamp[nextIdx] == epoch)
             {
-                yield return new GridPos(at.X + 1, at.Y);
+                return false;
             }
 
-            if (CanStep(at.X, at.Y, at.X - 1, at.Y))
+            _bfsStamp[nextIdx] = epoch;
+            _bfsParent[nextIdx] = fromIdx;
+            if (nextIdx == goalIdx)
             {
-                yield return new GridPos(at.X - 1, at.Y);
+                foundGoal = true;
+                return true;
             }
 
-            if (CanStep(at.X, at.Y, at.X, at.Y + 1))
+            _bfsQueue[tail++] = nextIdx;
+            var ny = nextIdx / w;
+            var nx = nextIdx - ny * w;
+            var ddx = (float)(nx - goalX);
+            var ddy = (float)(ny - goalY);
+            var distance = ddx * ddx + ddy * ddy;
+            if (distance < bestDistance)
             {
-                yield return new GridPos(at.X, at.Y + 1);
+                bestDistance = distance;
+                bestIdx = nextIdx;
             }
 
-            if (CanStep(at.X, at.Y, at.X, at.Y - 1))
+            return false;
+        }
+
+        private void BuildNavStepMask()
+        {
+            var w = _grid.Width;
+            var h = _grid.Height;
+            for (var y = 0; y < h; y++)
             {
-                yield return new GridPos(at.X, at.Y - 1);
+                var row = y * w;
+                for (var x = 0; x < w; x++)
+                {
+                    byte mask = 0;
+                    if (CanStep(x, y, x + 1, y)) mask |= 1;
+                    if (CanStep(x, y, x - 1, y)) mask |= 2;
+                    if (CanStep(x, y, x, y + 1)) mask |= 4;
+                    if (CanStep(x, y, x, y - 1)) mask |= 8;
+                    _navStepMask[row + x] = mask;
+                }
             }
         }
 
@@ -1931,6 +2678,8 @@ namespace HeistSim
             public int GoalY;
             public List<GridPos> Path;
             public int Index;
+            public int RepathCooldown;
+            public bool LastPathFailed;
         }
     }
 }

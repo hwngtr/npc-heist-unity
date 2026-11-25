@@ -13,17 +13,18 @@ namespace HeistSim.PlayModeTests
 {
     /// <summary>
     /// Live PlayMode verification for the 2D Riso Press Frischemarkt prototype:
-    /// verifies live UI Toolkit layout bounds and captures a 1600x900 composite of
-    /// the 2D isometric world and the split-screen editorial HUD.
+    /// verifies default hidden Shift Dossier drawer, minimalist fullscreen HUD bounds,
+    /// zero text overflow when the collapsible drawer opens with worst-case strings,
+    /// and captures Market2D.png, Market2DClose.png, and Market2DDrawer.png.
     /// </summary>
     public sealed class Market2DPlayModeCaptureTests
     {
         private const string ScenePath = "Assets/HeistSim/Market2D/Market2D.unity";
         private const string OutputPath = "Assets/HeistSim/Market2D/Captures/Market2D.png";
         private const string CloseZoomOutputPath = "Assets/HeistSim/Market2D/Captures/Market2DClose.png";
+        private const string DrawerOutputPath = "Assets/HeistSim/Market2D/Captures/Market2DDrawer.png";
         private const int Width = 1600;
         private const int Height = 900;
-        private const int PanelWidth = 420;
 
         [UnityTest]
         public IEnumerator RendersSplitScreenWorldAndUiToolkitHud()
@@ -49,9 +50,10 @@ namespace HeistSim.PlayModeTests
             Assert.That(cam, Is.Not.Null, "Main Camera missing");
             Assert.That(doc.panelSettings, Is.Not.Null, "PanelSettings missing");
 
-            // Render UI Toolkit into a transparent 1600x900 RenderTexture during live PlayMode frames.
-            var uiRt = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32);
-            uiRt.Create();
+            var uiClosedRt = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32);
+            uiClosedRt.Create();
+            var uiDrawerRt = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32);
+            uiDrawerRt.Create();
 
             var ps = doc.panelSettings;
             var prevTarget = ps.targetTexture;
@@ -60,96 +62,162 @@ namespace HeistSim.PlayModeTests
 
             ps.clearColor = true;
             ps.colorClearValue = new Color(0f, 0f, 0f, 0f);
-            ps.targetTexture = uiRt;
+            ps.targetTexture = uiClosedRt;
 
-            // Pause runner updates so our representative mid-heist sample prompt stays visible for capture.
             runner.enabled = false;
+            hud.SetDrawerOpen(false);
             var snap = runner.Game.Snapshot();
-            var hint = new MarketActionHint(true, "Stealing", 1.8f, snap.Player, "Hold E · Steal Bio Bananas & Carrots (€22)");
+            var hint = new MarketActionHint(true, "Stealing", 1.8f, snap.Player, "Hold E · Steal 18yr Islay Single Malt [RF-TAG] (€68)");
             hud.PushLog("LOOT", "Cased Entrance · Obst & Gemüse");
-            hud.PushLog("CCTV", "CAM-01 sweeping north aisle");
-            hud.PushLog("AI", "Store detective patrolling on FSM");
+            hud.PushLog("CCTV", "CAM-01 sweeping north-east aisle");
+            hud.PushLog("AI", "Guard 2 flanking east expressway");
             hud.Refresh(snap, hint);
+            hud.UpdateStamina(0.73f, false, 4);
 
-            // Wait several frames for UI Toolkit layout to settle.
             for (var i = 0; i < 4; i++)
             {
                 yield return null;
             }
 
-            // Invoke BaseRuntimePanel.Render() directly so batchmode renders the full UI Toolkit tree into uiRt.
-            var panel = doc.rootVisualElement != null ? doc.rootVisualElement.panel : null;
-            if (panel != null)
-            {
-                var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
-                var pt = panel.GetType();
-                pt.GetMethod("ValidateLayout", flags)?.Invoke(panel, null);
-                var renderMethod = pt.GetMethod("Render", flags, null, Type.EmptyTypes, null);
-                if (renderMethod != null)
-                {
-                    renderMethod.Invoke(panel, null);
-                }
-                else
-                {
-                    var utilType = typeof(UIDocument).Assembly.GetType("UnityEngine.UIElements.UIElementsRuntimeUtility");
-                    var renderPanel = utilType?.GetMethod("RenderPanel", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
-                    renderPanel?.Invoke(null, new object[] { panel, false });
-                }
-            }
+            RenderPanel(doc);
 
-            // Assert key UI Toolkit elements have live non-zero layout bounds.
             var root = doc.rootVisualElement;
             Assert.That(root, Is.Not.Null);
             var sidePanel = root.Q<VisualElement>("side-panel");
+            var topStrip = root.Q<VisualElement>("top-hud-strip");
+            var toggleBtn = root.Q<Button>("btn-toggle-drawer");
+            var zoneName = root.Q<Label>("zone-name");
+            var promptWrap = root.Q<VisualElement>("prompt-wrap");
+            var promptLabel = root.Q<Label>("prompt-label");
             var lootBig = root.Q<Label>("loot-big");
             var minimap = root.Q<VisualElement>("minimap-board");
-            var promptWrap = root.Q<VisualElement>("prompt-wrap");
 
             Assert.That(sidePanel, Is.Not.Null);
-            Assert.That(sidePanel.layout.width, Is.GreaterThan(350f), "Right editorial panel did not lay out");
-            Assert.That(lootBig, Is.Not.Null);
-            Assert.That(lootBig.layout.height, Is.GreaterThan(20f), "Loot display headline collapsed");
-            Assert.That(minimap, Is.Not.Null);
-            Assert.That(minimap.layout.height, Is.GreaterThanOrEqualTo(74f), "Minimap collapsed below its designed 74px board height");
+            Assert.That(hud.IsDrawerOpen, Is.False, "Shift Dossier must start hidden by default");
+            Assert.That(sidePanel.resolvedStyle.display, Is.EqualTo(DisplayStyle.None), "Side drawer should be DisplayStyle.None by default");
+            Assert.That(topStrip, Is.Not.Null);
+            Assert.That(topStrip.layout.width, Is.GreaterThan(220f), "Top-left compact HUD bar did not lay out");
+            Assert.That(toggleBtn, Is.Not.Null);
+            Assert.That(toggleBtn.layout.width, Is.GreaterThan(50f), "Top-right BRIEF toggle button collapsed");
+            Assert.That(zoneName, Is.Not.Null);
+            Assert.That(zoneName.layout.height, Is.GreaterThan(10f));
             Assert.That(promptWrap, Is.Not.Null);
             Assert.That(promptWrap.layout.width, Is.GreaterThan(150f), "Contextual prompt collapsed");
+            Assert.That(promptLabel, Is.Not.Null);
+            Assert.That(promptLabel.worldBound.xMax, Is.LessThanOrEqualTo(promptWrap.worldBound.xMax + 1f),
+                "Long prompt label overflowed its prompt card bounds");
 
-            var log0 = root.Q<VisualElement>("log-row-0");
-            var log1 = root.Q<VisualElement>("log-row-1");
-            Assert.That(log0, Is.Not.Null);
-            Assert.That(log1, Is.Not.Null);
-            Assert.That(log1.layout.y, Is.GreaterThanOrEqualTo(log0.layout.yMax - 0.5f), "Shift journal rows overlapped");
-
-            // Read rendered UI Toolkit pixels.
-            var uiTex = ReadRt(uiRt);
-
-            // Capture 1: Tactical 1:1 Bayer-dot zoom (zoomMultiplier = 1.0)
-            var worldWidth = Width - PanelWidth;
-            var tacticalTex = RenderComposite(cam, uiTex, worldWidth, Market2DRunner.ComputePixelPerfectOrthoSize(1.0f, Height));
+            var uiClosedTex = ReadRt(uiClosedRt);
+            var tacticalTex = RenderComposite(cam, uiClosedTex, Width, Market2DRunner.ComputePixelPerfectOrthoSize(1.0f, Height));
             Directory.CreateDirectory(Path.GetDirectoryName(OutputPath));
             File.WriteAllBytes(OutputPath, EncodeRgbPng(tacticalTex));
 
-            // Capture 2: Close 2:1 sprite-pixel zoom (zoomMultiplier = 2.0) to inspect micro-detail!
-            var closeTex = RenderComposite(cam, uiTex, worldWidth, Market2DRunner.ComputePixelPerfectOrthoSize(2.0f, Height));
+            var closeTex = RenderComposite(cam, uiClosedTex, Width, Market2DRunner.ComputePixelPerfectOrthoSize(2.0f, Height));
             File.WriteAllBytes(CloseZoomOutputPath, EncodeRgbPng(closeTex));
 
-            var uiVisiblePixels = CountAlphaPixels(uiTex);
-            Debug.Log("Market2D PlayMode capture done: uiVisiblePixels=" + uiVisiblePixels
-                + ", sidePanel=" + sidePanel.layout
-                + ", lootBig=" + lootBig.layout);
+            // Phase B: open the Shift Dossier drawer and verify layout + zero horizontal overflow across all cards
+            ps.targetTexture = uiDrawerRt;
+            hud.SetDrawerOpen(true);
+            hud.UpdateStamina(0.73f, false, 4);
+            hud.UpdateSquadTelemetry("ST+HTN", "COMBAT · DirectPursuit", "COMBAT · FlankCutoff", true, "Observant");
 
-            // Restore PanelSettings cleanly.
+            for (var i = 0; i < 4; i++)
+            {
+                yield return null;
+            }
+
+            RenderPanel(doc);
+
+            Assert.That(hud.IsDrawerOpen, Is.True);
+            Assert.That(sidePanel.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(sidePanel.layout.width, Is.InRange(355f, 405f), "Collapsible right drawer width out of expected range");
+            Assert.That(lootBig, Is.Not.Null);
+            Assert.That(lootBig.layout.height, Is.GreaterThan(18f), "Loot display headline collapsed");
+            Assert.That(minimap, Is.Not.Null);
+            Assert.That(minimap.layout.height, Is.GreaterThanOrEqualTo(74f), "Minimap collapsed below redesigned height");
+
+            string[] checkedIds =
+            {
+                "stat-bag", "stat-bag-sub", "stat-stamina", "stat-stamina-sub",
+                "stat-tags", "stat-cctv", "stat-radio",
+                "g1-ai-line", "g2-ai-line",
+                "btn-switch-ai", "btn-trait", "btn-reset",
+            };
+            foreach (var id in checkedIds)
+            {
+                var el = root.Q<VisualElement>(id);
+                Assert.That(el, Is.Not.Null, "Missing drawer element " + id);
+                Assert.That(el.worldBound.width, Is.GreaterThan(5f), id + " collapsed");
+                Assert.That(el.worldBound.xMin, Is.GreaterThanOrEqualTo(sidePanel.worldBound.xMin - 1f),
+                    id + " clipped past left drawer edge");
+                Assert.That(el.worldBound.xMax, Is.LessThanOrEqualTo(sidePanel.worldBound.xMax + 1f),
+                    id + " overflowed past right drawer edge");
+            }
+
+            var log0 = root.Q<VisualElement>("log-row-0");
+            var log1 = root.Q<VisualElement>("log-row-1");
+            var zoomGroup = root.Q<VisualElement>("zoom-group");
+            Assert.That(log0, Is.Not.Null);
+            Assert.That(log1, Is.Not.Null);
+            Assert.That(log1.layout.y, Is.GreaterThanOrEqualTo(log0.layout.yMax - 0.5f), "Shift journal rows overlapped");
+            Assert.That(log0.worldBound.yMax, Is.LessThanOrEqualTo(sidePanel.worldBound.yMax + 2f),
+                "First Shift Journal row clipped below 900px drawer viewport");
+            if (zoomGroup != null)
+            {
+                Assert.That(promptWrap.worldBound.xMax, Is.LessThanOrEqualTo(zoomGroup.worldBound.xMin - 4f),
+                    "Contextual prompt card overlapped shifted zoom controls when drawer opened");
+            }
+
+            var uiDrawerTex = ReadRt(uiDrawerRt);
+            var drawerCompositeTex = RenderComposite(cam, uiDrawerTex, Width, Market2DRunner.ComputePixelPerfectOrthoSize(1.0f, Height));
+            File.WriteAllBytes(DrawerOutputPath, EncodeRgbPng(drawerCompositeTex));
+
+            var uiClosedPixels = CountAlphaPixels(uiClosedTex);
+            var uiDrawerPixels = CountAlphaPixels(uiDrawerTex);
+            Debug.Log("Market2D PlayMode captures done: closedPx=" + uiClosedPixels
+                + ", drawerPx=" + uiDrawerPixels
+                + ", sidePanel=" + sidePanel.layout);
+
             ps.targetTexture = prevTarget;
             ps.clearColor = prevClear;
             ps.colorClearValue = prevClearCol;
 
-            uiRt.Release();
-            UnityEngine.Object.Destroy(uiRt);
-            UnityEngine.Object.Destroy(uiTex);
+            uiClosedRt.Release();
+            uiDrawerRt.Release();
+            UnityEngine.Object.Destroy(uiClosedRt);
+            UnityEngine.Object.Destroy(uiDrawerRt);
+            UnityEngine.Object.Destroy(uiClosedTex);
+            UnityEngine.Object.Destroy(uiDrawerTex);
             UnityEngine.Object.Destroy(tacticalTex);
             UnityEngine.Object.Destroy(closeTex);
+            UnityEngine.Object.Destroy(drawerCompositeTex);
 
-            Assert.That(uiVisiblePixels, Is.GreaterThan(200000), "UI Toolkit HUD did not paint visible pixels");
+            Assert.That(uiClosedPixels, Is.GreaterThan(25000), "Fullscreen minimal HUD did not paint visible pixels");
+            Assert.That(uiDrawerPixels, Is.GreaterThan(200000), "Open Shift Dossier drawer did not paint visible pixels");
+        }
+
+        private static void RenderPanel(UIDocument doc)
+        {
+            var panel = doc.rootVisualElement != null ? doc.rootVisualElement.panel : null;
+            if (panel == null)
+            {
+                return;
+            }
+
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+            var pt = panel.GetType();
+            pt.GetMethod("ValidateLayout", flags)?.Invoke(panel, null);
+            var renderMethod = pt.GetMethod("Render", flags, null, Type.EmptyTypes, null);
+            if (renderMethod != null)
+            {
+                renderMethod.Invoke(panel, null);
+            }
+            else
+            {
+                var utilType = typeof(UIDocument).Assembly.GetType("UnityEngine.UIElements.UIElementsRuntimeUtility");
+                var renderPanel = utilType?.GetMethod("RenderPanel", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                renderPanel?.Invoke(null, new object[] { panel, false });
+            }
         }
 
         private static Texture2D RenderComposite(Camera cam, Texture2D uiTex, int worldWidth, float orthoSize)
@@ -195,7 +263,6 @@ namespace HeistSim.PlayModeTests
 
             UnityEngine.Object.Destroy(leftTex);
 
-            // Alpha-composite UI Toolkit overlay + right editorial panel over the 1600x900 canvas.
             var uiPixels = uiTex.GetPixels32();
             for (var i = 0; i < dst.Length && i < uiPixels.Length; i++)
             {

@@ -13,6 +13,9 @@ Shader "HeistSim/RisoSpriteHighlight"
         _StatusTintAmount ("Status Tint Amount", Range(0, 1)) = 0
         _SeeThroughAmount ("See-Through Amount", Range(0, 1)) = 0
         _SeeThroughTarget ("See-Through Target World XY", Vector) = (0, 0, 0, 0)
+        _SeeThroughTarget1 ("See-Through Target 1 World XY + Amount Z", Vector) = (0, 0, 0, 0)
+        _SeeThroughTarget2 ("See-Through Target 2 World XY + Amount Z", Vector) = (0, 0, 0, 0)
+        _SeeThroughTarget3 ("See-Through Target 3 World XY + Amount Z", Vector) = (0, 0, 0, 0)
         _SeeThroughRadius ("See-Through Clear Radius", Float) = 0.36
         _SeeThroughSoft ("See-Through Soft Band", Float) = 0.30
         _SeeThroughKeep ("See-Through Bayer Keep Floor", Range(0, 1)) = 0.375
@@ -75,11 +78,29 @@ Shader "HeistSim/RisoSpriteHighlight"
             float _StatusTintAmount;
             float _SeeThroughAmount;
             float4 _SeeThroughTarget;
+            float4 _SeeThroughTarget1;
+            float4 _SeeThroughTarget2;
+            float4 _SeeThroughTarget3;
             float _SeeThroughRadius;
             float _SeeThroughSoft;
             float _SeeThroughKeep;
             float _SeeThroughCellSize;
             float _SeeThroughFadeAlpha;
+
+            float SeeThroughSolidForTarget(float2 cellCenter, float2 targetXy, float amt)
+            {
+                if (amt <= 0.001)
+                {
+                    return 1.0;
+                }
+
+                float d = distance(cellCenter, targetXy);
+                float reach = (_SeeThroughRadius + _SeeThroughSoft) * amt;
+                float solid = _SeeThroughSoft > 0.0001
+                    ? saturate((d - reach) / _SeeThroughSoft + 1.0)
+                    : step(reach, d);
+                return max(solid, _SeeThroughKeep);
+            }
 
             float Bayer4x4(int2 cell)
             {
@@ -122,24 +143,27 @@ Shader "HeistSim/RisoSpriteHighlight"
             {
                 fixed4 c = tex2D(_MainTex, IN.texcoord) * IN.color;
 
-                // T10: World-space Bayer 4x4 dithered see-through / cutout when actor walks behind tall fixture
-                if (_SeeThroughAmount > 0.001 && c.a > 0.01)
+                // T10: World-space Bayer 4x4 dithered see-through / cutout when any character walks behind walls or tall fixtures
+                float amt0 = _SeeThroughTarget.z > 0.0001 ? _SeeThroughTarget.z : _SeeThroughAmount;
+                float amt1 = _SeeThroughTarget1.z;
+                float amt2 = _SeeThroughTarget2.z;
+                float amt3 = _SeeThroughTarget3.z;
+                float maxAmt = max(max(amt0, amt1), max(amt2, amt3));
+                if (maxAmt > 0.001 && c.a > 0.01)
                 {
                     if (_SeeThroughFadeAlpha < 0.999)
                     {
-                        c.a *= lerp(1.0, _SeeThroughFadeAlpha, _SeeThroughAmount);
+                        c.a *= lerp(1.0, _SeeThroughFadeAlpha, maxAmt);
                     }
                     else if (_SeeThroughRadius > 0.0001)
                     {
                         float cellSize = max(0.005, _SeeThroughCellSize);
                         float2 cellF = floor(IN.worldPos / cellSize);
                         float2 cellCenter = (cellF + 0.5) * cellSize;
-                        float d = distance(cellCenter, _SeeThroughTarget.xy);
-                        float reach = (_SeeThroughRadius + _SeeThroughSoft) * _SeeThroughAmount;
-                        float solid = _SeeThroughSoft > 0.0001
-                            ? saturate((d - reach) / _SeeThroughSoft + 1.0)
-                            : step(reach, d);
-                        solid = max(solid, _SeeThroughKeep);
+                        float solid = SeeThroughSolidForTarget(cellCenter, _SeeThroughTarget.xy, amt0);
+                        solid = min(solid, SeeThroughSolidForTarget(cellCenter, _SeeThroughTarget1.xy, amt1));
+                        solid = min(solid, SeeThroughSolidForTarget(cellCenter, _SeeThroughTarget2.xy, amt2));
+                        solid = min(solid, SeeThroughSolidForTarget(cellCenter, _SeeThroughTarget3.xy, amt3));
                         float threshold = Bayer4x4(int2((int)cellF.x, (int)cellF.y));
                         if (solid <= threshold)
                         {
@@ -152,26 +176,22 @@ Shader "HeistSim/RisoSpriteHighlight"
                 {
                     float isSolid = step(_SolidAlphaThreshold, c.a);
                     float2 stepUv = _MainTex_TexelSize.xy * _OutlineWidth;
+                    float2 stepDiag = stepUv * (1.65 * 0.78);
 
-                    // 8-tap inner bright highlight rim + outer dark navy contrast halo for unmistakable stealable borders
-                    float2 stepOuter = stepUv * 1.65;
-                    float aN  = tex2D(_MainTex, IN.texcoord + float2( 0.0,       stepUv.y)).a;
-                    float aS  = tex2D(_MainTex, IN.texcoord + float2( 0.0,      -stepUv.y)).a;
-                    float aE  = tex2D(_MainTex, IN.texcoord + float2( stepUv.x,  0.0     )).a;
-                    float aW  = tex2D(_MainTex, IN.texcoord + float2(-stepUv.x,  0.0     )).a;
-                    float aNE = tex2D(_MainTex, IN.texcoord + float2( stepUv.x,  stepUv.y) * 0.72).a;
-                    float aNW = tex2D(_MainTex, IN.texcoord + float2(-stepUv.x,  stepUv.y) * 0.72).a;
-                    float aSE = tex2D(_MainTex, IN.texcoord + float2( stepUv.x, -stepUv.y) * 0.72).a;
-                    float aSW = tex2D(_MainTex, IN.texcoord + float2(-stepUv.x, -stepUv.y) * 0.72).a;
+                    // 4-tap cardinal inner rim + 4-tap diagonal outer InkBlue contrast halo
+                    float aN = tex2D(_MainTex, IN.texcoord + float2( 0.0,       stepUv.y)).a;
+                    float aS = tex2D(_MainTex, IN.texcoord + float2( 0.0,      -stepUv.y)).a;
+                    float aE = tex2D(_MainTex, IN.texcoord + float2( stepUv.x,  0.0     )).a;
+                    float aW = tex2D(_MainTex, IN.texcoord + float2(-stepUv.x,  0.0     )).a;
+                    float maxInner = max(max(aN, aS), max(aE, aW));
 
-                    float maxNeighbor = max(max(max(aN, aS), max(aE, aW)), max(max(aNE, aNW), max(aSE, aSW)));
-                    float nearSolid = smoothstep(_SolidAlphaThreshold - 0.14, _SolidAlphaThreshold + 0.04, maxNeighbor);
+                    float oNE = tex2D(_MainTex, IN.texcoord + float2( stepDiag.x,  stepDiag.y)).a;
+                    float oNW = tex2D(_MainTex, IN.texcoord + float2(-stepDiag.x,  stepDiag.y)).a;
+                    float oSE = tex2D(_MainTex, IN.texcoord + float2( stepDiag.x, -stepDiag.y)).a;
+                    float oSW = tex2D(_MainTex, IN.texcoord + float2(-stepDiag.x, -stepDiag.y)).a;
+                    float maxOuter = max(max(max(oNE, oNW), max(oSE, oSW)), maxInner);
 
-                    float oN = tex2D(_MainTex, IN.texcoord + float2( 0.0,         stepOuter.y)).a;
-                    float oS = tex2D(_MainTex, IN.texcoord + float2( 0.0,        -stepOuter.y)).a;
-                    float oE = tex2D(_MainTex, IN.texcoord + float2( stepOuter.x, 0.0        )).a;
-                    float oW = tex2D(_MainTex, IN.texcoord + float2(-stepOuter.x, 0.0        )).a;
-                    float maxOuter = max(max(oN, oS), max(oE, oW));
+                    float nearSolid = smoothstep(_SolidAlphaThreshold - 0.14, _SolidAlphaThreshold + 0.04, maxInner);
                     float nearOuter = smoothstep(_SolidAlphaThreshold - 0.14, _SolidAlphaThreshold + 0.04, maxOuter);
 
                     float innerRim = saturate(nearSolid * (1.0 - isSolid));

@@ -45,7 +45,7 @@ The playable 2D market shift is `Assets/HeistSim/Market2D/Market2D.unity`. Rebui
 | C | crouch, slower and quieter |
 | Shift | sprint, faster but louder |
 | R | start a new shift |
-| Tab or B | switch the guard between the FSM and the BT controller |
+| Tab or B | cycle the two security guards between StateTree + HTN, FSM, and BT |
 
 Click the Game view once to give it focus before WASD works.
 

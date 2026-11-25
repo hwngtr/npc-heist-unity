@@ -38,7 +38,6 @@ namespace HeistSim
     public static class MarketInteractions
     {
         private const float StealRange = 2.4f;
-        private const float PowerHold = 2.4f;
         private const float DetagHold = 1.8f;
         private const float VitrineHold = 3.2f;
 
@@ -53,7 +52,7 @@ namespace HeistSim
             if (snapshot.PanelInRange)
             {
                 var panel = new Vector2((float)MarketData.Panel.I, (float)MarketData.Panel.J);
-                return new MarketActionHint(true, "Cutting the power", PowerHold, panel, "Hold E: disable CCTV");
+                return new MarketActionHint(true, "Cutting the power", HeistGame.PowerHold, panel, "Hold E: cut CCTV breaker (loud)");
             }
 
             if (snapshot.DetaggerInRange)

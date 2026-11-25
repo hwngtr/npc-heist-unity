@@ -63,6 +63,12 @@ namespace HeistSim
     {
         private readonly Func<int, int, bool> _isWalkable;
         private readonly Func<int, int, int, int, bool> _canStep;
+        private readonly bool[] _walkable;
+        private readonly byte[] _stepMask;
+        private readonly int[] _queue;
+        private readonly int[] _parent;
+        private readonly int[] _visitStamp;
+        private int _epoch;
 
         /// <summary>Creates a grid from its bounds and a per-tile walkability predicate.</summary>
         public NavGrid(int width, int height, Func<int, int, bool> isWalkable)
@@ -91,6 +97,52 @@ namespace HeistSim
             Height = height;
             _isWalkable = isWalkable ?? throw new ArgumentNullException(nameof(isWalkable));
             _canStep = canStep;
+
+            var count = width * height;
+            _walkable = new bool[count];
+            _stepMask = new byte[count];
+            _queue = new int[count];
+            _parent = new int[count];
+            _visitStamp = new int[count];
+
+            for (var y = 0; y < height; y++)
+            {
+                var row = y * width;
+                for (var x = 0; x < width; x++)
+                {
+                    _walkable[row + x] = _isWalkable(x, y);
+                }
+            }
+
+            for (var y = 0; y < height; y++)
+            {
+                var row = y * width;
+                for (var x = 0; x < width; x++)
+                {
+                    byte mask = 0;
+                    if (x + 1 < width && _walkable[row + x + 1] && (_canStep == null || _canStep(x, y, x + 1, y)))
+                    {
+                        mask |= 1;
+                    }
+
+                    if (x - 1 >= 0 && _walkable[row + x - 1] && (_canStep == null || _canStep(x, y, x - 1, y)))
+                    {
+                        mask |= 2;
+                    }
+
+                    if (y + 1 < height && _walkable[row + width + x] && (_canStep == null || _canStep(x, y, x, y + 1)))
+                    {
+                        mask |= 4;
+                    }
+
+                    if (y - 1 >= 0 && _walkable[row - width + x] && (_canStep == null || _canStep(x, y, x, y - 1)))
+                    {
+                        mask |= 8;
+                    }
+
+                    _stepMask[row + x] = mask;
+                }
+            }
         }
 
         /// <summary>Grid width in tiles.</summary>
@@ -108,12 +160,23 @@ namespace HeistSim
         /// <summary>Whether a tile is inside the grid and walkable.</summary>
         public bool IsWalkable(int x, int y)
         {
-            return InBounds(x, y) && _isWalkable(x, y);
+            return InBounds(x, y) && _walkable[y * Width + x];
         }
 
         /// <summary>Whether a single orthogonal step into a tile is legal.</summary>
         public bool CanStep(int fromX, int fromY, int toX, int toY)
         {
+            if (InBounds(fromX, fromY))
+            {
+                var dx = toX - fromX;
+                var dy = toY - fromY;
+                var idx = fromY * Width + fromX;
+                if (dx == 1 && dy == 0) return (_stepMask[idx] & 1) != 0;
+                if (dx == -1 && dy == 0) return (_stepMask[idx] & 2) != 0;
+                if (dx == 0 && dy == 1) return (_stepMask[idx] & 4) != 0;
+                if (dx == 0 && dy == -1) return (_stepMask[idx] & 8) != 0;
+            }
+
             if (!IsWalkable(toX, toY))
             {
                 return false;
@@ -126,6 +189,16 @@ namespace HeistSim
         public List<GridPos> Neighbors(int x, int y)
         {
             var result = new List<GridPos>(4);
+            if (InBounds(x, y))
+            {
+                var mask = _stepMask[y * Width + x];
+                if ((mask & 1) != 0) result.Add(new GridPos(x + 1, y));
+                if ((mask & 2) != 0) result.Add(new GridPos(x - 1, y));
+                if ((mask & 4) != 0) result.Add(new GridPos(x, y + 1));
+                if ((mask & 8) != 0) result.Add(new GridPos(x, y - 1));
+                return result;
+            }
+
             AddNeighbour(result, x, y, 1, 0);
             AddNeighbour(result, x, y, -1, 0);
             AddNeighbour(result, x, y, 0, 1);
@@ -136,34 +209,92 @@ namespace HeistSim
         /// <summary>Returns the shortest path from start to goal including both tiles, or null when unreachable.</summary>
         public List<GridPos> FindPath(GridPos start, GridPos goal)
         {
-            var startKey = new GridPos(start.X, start.Y);
-            if (startKey.Equals(goal))
+            if (start.Equals(goal))
             {
                 return new List<GridPos> { goal };
             }
 
-            var queue = new Queue<GridPos>();
-            var previous = new Dictionary<GridPos, GridPos>();
-            var visited = new HashSet<GridPos> { startKey };
-            queue.Enqueue(startKey);
-
-            while (queue.Count > 0)
+            if (!InBounds(start.X, start.Y) || !InBounds(goal.X, goal.Y))
             {
-                var at = queue.Dequeue();
-                foreach (var next in Neighbors(at.X, at.Y))
+                return null;
+            }
+
+            var w = Width;
+            var startIdx = start.Y * w + start.X;
+            var goalIdx = goal.Y * w + goal.X;
+            if (!_walkable[goalIdx])
+            {
+                return null;
+            }
+
+            if (++_epoch == int.MaxValue)
+            {
+                Array.Clear(_visitStamp, 0, _visitStamp.Length);
+                _epoch = 1;
+            }
+
+            var epoch = _epoch;
+            var head = 0;
+            var tail = 0;
+            _visitStamp[startIdx] = epoch;
+            _parent[startIdx] = -1;
+            _queue[tail++] = startIdx;
+
+            while (head < tail)
+            {
+                var at = _queue[head++];
+                var mask = _stepMask[at];
+                if (mask == 0)
                 {
-                    if (!visited.Add(next))
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    previous[next] = at;
-                    if (next.Equals(goal))
+                if ((mask & 1) != 0)
+                {
+                    var next = at + 1;
+                    if (_visitStamp[next] != epoch)
                     {
-                        return Rebuild(previous, startKey, next);
+                        _visitStamp[next] = epoch;
+                        _parent[next] = at;
+                        if (next == goalIdx) return Rebuild(w, start, startIdx, goalIdx);
+                        _queue[tail++] = next;
                     }
+                }
 
-                    queue.Enqueue(next);
+                if ((mask & 2) != 0)
+                {
+                    var next = at - 1;
+                    if (_visitStamp[next] != epoch)
+                    {
+                        _visitStamp[next] = epoch;
+                        _parent[next] = at;
+                        if (next == goalIdx) return Rebuild(w, start, startIdx, goalIdx);
+                        _queue[tail++] = next;
+                    }
+                }
+
+                if ((mask & 4) != 0)
+                {
+                    var next = at + w;
+                    if (_visitStamp[next] != epoch)
+                    {
+                        _visitStamp[next] = epoch;
+                        _parent[next] = at;
+                        if (next == goalIdx) return Rebuild(w, start, startIdx, goalIdx);
+                        _queue[tail++] = next;
+                    }
+                }
+
+                if ((mask & 8) != 0)
+                {
+                    var next = at - w;
+                    if (_visitStamp[next] != epoch)
+                    {
+                        _visitStamp[next] = epoch;
+                        _parent[next] = at;
+                        if (next == goalIdx) return Rebuild(w, start, startIdx, goalIdx);
+                        _queue[tail++] = next;
+                    }
                 }
             }
 
@@ -180,14 +311,16 @@ namespace HeistSim
             }
         }
 
-        private static List<GridPos> Rebuild(Dictionary<GridPos, GridPos> previous, GridPos start, GridPos goal)
+        private List<GridPos> Rebuild(int w, GridPos start, int startIdx, int goalIdx)
         {
             var path = new List<GridPos>();
-            var current = goal;
-            while (!current.Equals(start))
+            var current = goalIdx;
+            while (current != startIdx)
             {
-                path.Add(current);
-                current = previous[current];
+                var cy = current / w;
+                var cx = current - cy * w;
+                path.Add(new GridPos(cx, cy));
+                current = _parent[current];
             }
 
             path.Add(start);

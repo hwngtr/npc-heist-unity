@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: b9dd82f9d2dd9380e894e382852664af
+guid: d33a00e78f2b5f503b341ae44b87443f
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 7367412290547219101
-    second: lowwall_ne_0
+      213: -3783569410766758094
+    second: cctv_head_6_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -50,7 +50,7 @@ TextureImporter:
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 9
-  spritePivot: {x: 0.11564626, y: 0.62608695}
+  spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 128
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
@@ -115,13 +115,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: lowwall_ne_0
+      name: cctv_head_6_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 294
-        height: 230
+        width: 96
+        height: 96
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -130,8 +130,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: d9af9eba17e4e3660800000000000000
-      internalID: 7367412290547219101
+      spriteID: 23f9638caaf0e7bc0800000000000000
+      internalID: -3783569410766758094
       vertices: []
       indices: 
       edges: []

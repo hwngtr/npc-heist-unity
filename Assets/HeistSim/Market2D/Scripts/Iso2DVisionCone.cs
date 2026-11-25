@@ -10,7 +10,7 @@ namespace HeistSim.Market2D
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public sealed class Iso2DVisionCone : MonoBehaviour
     {
-        private const int Segments = 44;
+        private const int Segments = 24;
 
         private Mesh _mesh;
         private MeshRenderer _renderer;
@@ -19,6 +19,23 @@ namespace HeistSim.Market2D
         private Color[] _colors;
         private int[] _triangles;
         private Vector3[] _outlinePts;
+
+        private bool _hasLast;
+        private float _lastI;
+        private float _lastJ;
+        private float _lastAngle;
+        private float _lastHalfAngle;
+        private float _lastRange;
+        private Color _lastColor;
+        private Color _lastOutline;
+        private bool _lastHadGrid;
+        private bool _lastIgnoreOriginWall;
+
+        /// <summary>Local space endpoint of the left outer vision cone ray.</summary>
+        public Vector3 LeftRayLocal { get; private set; }
+
+        /// <summary>Local space endpoint of the right outer vision cone ray.</summary>
+        public Vector3 RightRayLocal { get; private set; }
 
         private void Awake()
         {
@@ -97,6 +114,34 @@ namespace HeistSim.Market2D
             Color? outlineColor = null,
             bool ignoreOriginWall = false)
         {
+            var borderCol = outlineColor ?? new Color(color.r, color.g, color.b, Mathf.Clamp01(color.a * 2.4f + 0.35f));
+            var hasGrid = grid != null;
+            if (_hasLast
+                && _mesh != null
+                && _lastHadGrid == hasGrid
+                && _lastIgnoreOriginWall == ignoreOriginWall
+                && Mathf.Abs(_lastI - originI) < 0.001f
+                && Mathf.Abs(_lastJ - originJ) < 0.001f
+                && Mathf.Abs(_lastAngle - facingAngle) < 0.001f
+                && Mathf.Abs(_lastHalfAngle - halfAngle) < 0.001f
+                && Mathf.Abs(_lastRange - range) < 0.002f
+                && ApproxColor(_lastColor, color)
+                && ApproxColor(_lastOutline, borderCol))
+            {
+                return;
+            }
+
+            _hasLast = true;
+            _lastI = originI;
+            _lastJ = originJ;
+            _lastAngle = facingAngle;
+            _lastHalfAngle = halfAngle;
+            _lastRange = range;
+            _lastColor = color;
+            _lastOutline = borderCol;
+            _lastHadGrid = hasGrid;
+            _lastIgnoreOriginWall = ignoreOriginWall;
+
             EnsureMesh();
             var originWorld = Iso2DMath.TileToWorld(originI, originJ, 0f);
             transform.position = originWorld;
@@ -127,6 +172,8 @@ namespace HeistSim.Market2D
             }
 
             _outlinePts[Segments + 2] = Vector3.zero;
+            LeftRayLocal = _vertices[1];
+            RightRayLocal = _vertices[Segments + 1];
 
             _mesh.vertices = _vertices;
             _mesh.colors = _colors;
@@ -134,12 +181,19 @@ namespace HeistSim.Market2D
 
             if (_outline != null)
             {
-                var borderCol = outlineColor ?? new Color(color.r, color.g, color.b, Mathf.Clamp01(color.a * 2.4f + 0.35f));
                 _outline.positionCount = _outlinePts.Length;
                 _outline.SetPositions(_outlinePts);
                 _outline.startColor = borderCol;
                 _outline.endColor = borderCol;
             }
+        }
+
+        private static bool ApproxColor(Color a, Color b)
+        {
+            return Mathf.Abs(a.r - b.r) < 0.002f
+                && Mathf.Abs(a.g - b.g) < 0.002f
+                && Mathf.Abs(a.b - b.b) < 0.002f
+                && Mathf.Abs(a.a - b.a) < 0.002f;
         }
     }
 }

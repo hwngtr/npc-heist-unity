@@ -47,6 +47,7 @@ namespace HeistSim.Market2D
         private float _shakeIntensity;
         private float _shakeTimer;
         private float _shakeDuration = 0.2f;
+        private float _meshAccum;
         private bool _initialized;
 
         /// <summary>Number of currently active pooled event particles (for live verification).</summary>
@@ -99,7 +100,12 @@ namespace HeistSim.Market2D
 
             var dt = Mathf.Min(Time.deltaTime, 0.05f);
             StepParticles(dt);
-            RebuildParticleMesh();
+            _meshAccum += dt;
+            if (ActiveParticleCount > 0 || _meshAccum >= 1f / 30f)
+            {
+                _meshAccum = 0f;
+                RebuildParticleMesh();
+            }
         }
 
         /// <summary>Creates the pooled quad-mesh particle renderer and diegetic channel ring once.</summary>

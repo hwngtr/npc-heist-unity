@@ -20,7 +20,13 @@ from typing import Any, Dict, List, Tuple
 
 import cairo
 
-from actors import render_actor_sprite, write_ui_dither_tile
+from actors import (
+    render_actor_sprite,
+    render_cctv_head_sprite,
+    render_prop_sprite,
+    render_ui_badge_sprite,
+    write_ui_dither_tile,
+)
 from catalog import (
     LOOT_BEARING_KINDS,
     MARKET_FIXTURES,
@@ -102,24 +108,31 @@ def render_room_sprite(
     return surf, meta
 
 
-def render_low_wall_segment_sprite(side: str, length: float, scale: int = 2) -> Tuple[cairo.ImageSurface, Dict[str, Any]]:
-    """Renders one depth-sortable low divider wall segment (along NE or NW edge)."""
-    from world import LOW_H, box_at
+def render_low_wall_segment_sprite(
+    side: str,
+    length: float = 0.71,
+    part: str = "full",
+    scale: int = 2,
+) -> Tuple[cairo.ImageSurface, Dict[str, Any]]:
+    """Renders a depth-sortable low divider wall segment ('start', 'mid', 'end', or 'full')."""
+    from world import LOW_H
     t = 0.07
+    has_start = part in ("start", "full")
+    has_end = part in ("end", "full")
     pts = []
     if side == "ne":
-        for i in (0.0, length):
+        for i in (-0.04 if not has_start else 0.0, length + (0.04 if not has_end else 0.0)):
             for j in (-t, t):
                 for z in (0.0, LOW_H):
                     pts.append(iso(i, j, z))
     else:
         for i in (-t, t):
-            for j in (0.0, length):
+            for j in (-0.04 if not has_start else 0.0, length + (0.04 if not has_end else 0.0)):
                 for z in (0.0, LOW_H):
                     pts.append(iso(i, j, z))
     xs = [p[0] for p in pts]
     ys = [p[1] for p in pts]
-    pad = 14
+    pad = 22
     x0 = int(math.floor(min(xs) - pad))
     y0 = int(math.floor(min(ys) - pad))
     x1 = int(math.ceil(max(xs) + pad))
@@ -131,16 +144,82 @@ def render_low_wall_segment_sprite(side: str, length: float, scale: int = 2) -> 
 
     surf, ctx = make_surface(w_world * scale, h_world * scale, fill_paper=False)
     ctx.scale(scale, scale)
-    h = RisoHand(ctx, ox=ox, oy=oy, seed=f"lowwall-{side}-{length:.2f}", transparent_sprite=True)
-    rng = stream_of("lowwall", side, length)
-    col = ["blue", 0.24]
+    h = RisoHand(ctx, ox=ox, oy=oy, seed=f"lowwall-{side}-{part}-{length:.2f}", transparent_sprite=True)
+    rng = stream_of("lowwall", side, part, length)
+    lw = 0.95
+    seam_pad = 0.014 if not has_end else 0.0
+
     if side == "ne":
-        box_at(h, rng, 0.0, -t, length, 2 * t, 0.0, LOW_H, col, shadow=False, lw=0.95, top_col=["paper", 1.0])
+        # Non-overlapping base contact skirt + subtle back rim
+        h.tint(h.tile(0.0, t, length, 0.14, 0.0), "blue", 0.16, over_transparent=True)
+        h.tint(h.tile(0.0, -t - 0.05, length, 0.05, 0.0), "blue", 0.11, over_transparent=True)
+        if has_end:
+            h.tint(h.tile(length, -t, 0.10, 2 * t + 0.14, 0.0), "blue", 0.14, over_transparent=True)
+
+        # Cream paper core extended across the continuing seam so subpixel cracks never show
+        if seam_pad > 0.0:
+            h.knock(h.face_i(0.0, t, length + seam_pad, 0.0, LOW_H))
+            h.knock(h.tile(0.0, -t, length + seam_pad, 2 * t, LOW_H))
+
+        sw = h.face_i(0.0, t, length, 0.0, LOW_H)
+        h.fill(sw, "blue", 0.24)
+        h.tint(sw, "blue", 0.18)
+
+        if has_end:
+            se = h.face_j(length, -t, 2 * t, 0.0, LOW_H)
+            h.fill(se, "blue", 0.24)
+            h.tint(se, "blue", 0.40)
+
+        top = h.tile(0.0, -t, length, 2 * t, LOW_H)
+        h.fill(top, "paper", 1.0)
+
+        # Crisp continuous rails without vertical joint seams
+        h.line(rng, [h.p(0.0, -t, LOW_H), h.p(length, -t, LOW_H)], "blue", w=lw, tone=0.9, amp=0.0)
+        h.line(rng, [h.p(0.0, t, LOW_H), h.p(length, t, LOW_H)], "blue", w=lw, tone=0.9, amp=0.0)
+        h.line(rng, [h.p(0.0, t, 0.0), h.p(length, t, 0.0)], "blue", w=lw * 1.30, tone=0.96, amp=0.0)
+
+        if has_start:
+            h.line(rng, [h.p(0.0, t, 0.0), h.p(0.0, t, LOW_H), h.p(0.0, -t, LOW_H)], "blue", w=lw, tone=0.9, amp=0.0)
+        if has_end:
+            h.line(rng, [h.p(length, t, 0.0), h.p(length, t, LOW_H)], "blue", w=lw, tone=0.9, amp=0.0)
+            h.line(rng, [h.p(length, -t, LOW_H), h.p(length, t, LOW_H)], "blue", w=lw, tone=0.9, amp=0.0)
+            h.line(rng, [h.p(length, t, 0.0), h.p(length, -t, 0.0), h.p(length, -t, LOW_H)], "blue", w=lw, tone=0.9, amp=0.0)
     else:
-        box_at(h, rng, -t, 0.0, 2 * t, length, 0.0, LOW_H, col, shadow=False, lw=0.95, top_col=["paper", 1.0])
+        h.tint(h.tile(t, 0.0, 0.14, length, 0.0), "blue", 0.16, over_transparent=True)
+        h.tint(h.tile(-t - 0.05, 0.0, 0.05, length, 0.0), "blue", 0.11, over_transparent=True)
+        if has_end:
+            h.tint(h.tile(-t, length, 2 * t + 0.14, 0.10, 0.0), "blue", 0.14, over_transparent=True)
+
+        if seam_pad > 0.0:
+            h.knock(h.face_j(t, 0.0, length + seam_pad, 0.0, LOW_H))
+            h.knock(h.tile(-t, 0.0, 2 * t, length + seam_pad, LOW_H))
+
+        se = h.face_j(t, 0.0, length, 0.0, LOW_H)
+        h.fill(se, "blue", 0.24)
+        h.tint(se, "blue", 0.40)
+
+        if has_end:
+            sw = h.face_i(-t, length, 2 * t, 0.0, LOW_H)
+            h.fill(sw, "blue", 0.24)
+            h.tint(sw, "blue", 0.18)
+
+        top = h.tile(-t, 0.0, 2 * t, length, LOW_H)
+        h.fill(top, "paper", 1.0)
+
+        h.line(rng, [h.p(-t, 0.0, LOW_H), h.p(-t, length, LOW_H)], "blue", w=lw, tone=0.9, amp=0.0)
+        h.line(rng, [h.p(t, 0.0, LOW_H), h.p(t, length, LOW_H)], "blue", w=lw, tone=0.9, amp=0.0)
+        h.line(rng, [h.p(t, 0.0, 0.0), h.p(t, length, 0.0)], "blue", w=lw * 1.30, tone=0.96, amp=0.0)
+
+        if has_start:
+            h.line(rng, [h.p(t, 0.0, 0.0), h.p(t, 0.0, LOW_H), h.p(-t, 0.0, LOW_H)], "blue", w=lw, tone=0.9, amp=0.0)
+        if has_end:
+            h.line(rng, [h.p(t, length, 0.0), h.p(t, length, LOW_H)], "blue", w=lw, tone=0.9, amp=0.0)
+            h.line(rng, [h.p(-t, length, LOW_H), h.p(t, length, LOW_H)], "blue", w=lw, tone=0.9, amp=0.0)
+            h.line(rng, [h.p(t, length, 0.0), h.p(-t, length, 0.0), h.p(-t, length, LOW_H)], "blue", w=lw, tone=0.9, amp=0.0)
 
     meta = {
         "side": side,
+        "part": part,
         "length": length,
         "width": w_world * scale,
         "height": h_world * scale,
@@ -315,8 +394,9 @@ def cmd_export_unity(scale: int = 2) -> None:
     fixtures_dir = UNITY_SPRITES_DIR / "Fixtures"
     rooms_dir = UNITY_SPRITES_DIR / "Rooms"
     actors_dir = UNITY_SPRITES_DIR / "Actors"
+    props_dir = UNITY_SPRITES_DIR / "Props"
     ui_dir = UNITY_SPRITES_DIR / "UI"
-    for d in (fixtures_dir, rooms_dir, actors_dir, ui_dir):
+    for d in (fixtures_dir, rooms_dir, actors_dir, props_dir, ui_dir):
         d.mkdir(parents=True, exist_ok=True)
 
     manifest: Dict[str, Any] = {
@@ -370,15 +450,21 @@ def cmd_export_unity(scale: int = 2) -> None:
         meta["path"] = f"Assets/HeistSim/Market2D/Sprites/{rel}"
         manifest["rooms"][rm["id"]] = meta
 
-    # Export depth-sortable low divider wall segments (left/right of the [3.55, 5.45] doorway gap)
+    # Export depth-sortable 0.71-tile low divider wall segments (5 per 3.55-tile wing for accurate behind/front sorting)
     manifest["lowWalls"] = {}
+    for stale in ("lowwall_ne.png", "lowwall_ne.png.meta", "lowwall_nw.png", "lowwall_nw.png.meta"):
+        stale_lw = rooms_dir / stale
+        if stale_lw.exists():
+            stale_lw.unlink()
+
     for side in ("ne", "nw"):
-        key = f"lowwall_{side}"
-        sp, meta = render_low_wall_segment_sprite(side, 3.55, scale=scale)
-        rel = f"Rooms/{key}.png"
-        sp.write_to_png(str(UNITY_SPRITES_DIR / rel))
-        meta["path"] = f"Assets/HeistSim/Market2D/Sprites/{rel}"
-        manifest["lowWalls"][key] = meta
+        for part in ("start", "mid", "end"):
+            key = f"lowwall_{side}_{part}"
+            sp, meta = render_low_wall_segment_sprite(side, 0.71, part=part, scale=scale)
+            rel = f"Rooms/{key}.png"
+            sp.write_to_png(str(UNITY_SPRITES_DIR / rel))
+            meta["path"] = f"Assets/HeistSim/Market2D/Sprites/{rel}"
+            manifest["lowWalls"][key] = meta
 
     # Remove legacy detached floating loot star sprites if present
     for stale in ("loot_glint.png", "loot_glint.png.meta", "loot_rf.png", "loot_rf.png.meta"):
@@ -386,20 +472,49 @@ def cmd_export_unity(scale: int = 2) -> None:
         if stale_path.exists():
             stale_path.unlink()
 
-    # Export animated actors & world alert bubbles (no detached loot stars!)
-    actor_roles = (
-        "player", "player_walk1", "player_walk2",
-        "player_crouch", "player_crouch_walk1", "player_crouch_walk2",
-        "guard", "guard_walk1", "guard_walk2",
-        "staff", "staff_walk1", "staff_walk2",
-        "cctv", "bubble_alert", "bubble_question",
-    )
+    # Export animated actors (idle + 2-frame legacy + 6-frame walks) & world props/UI under unified Cairo Riso Press
+    actor_roles: List[str] = []
+    for prefix in ("player", "player_crouch", "guard", "guard2", "staff"):
+        actor_roles.extend([prefix, f"{prefix}_walk1", f"{prefix}_walk2"])
+        actor_roles.extend([f"{prefix}_walk_{i}" for i in range(6)])
+    actor_roles.extend(["cctv", "cctv_mount", "bubble_alert", "bubble_question"])
+
     for role in actor_roles:
         sp, meta = render_actor_sprite(role, scale=scale)
         rel = f"Actors/{role}.png"
         sp.write_to_png(str(UNITY_SPRITES_DIR / rel))
         meta["path"] = f"Assets/HeistSim/Market2D/Sprites/{rel}"
         manifest["actors"][role] = meta
+
+    for dir_idx in range(8):
+        key = f"cctv_head_{dir_idx}"
+        sp, meta = render_cctv_head_sprite(dir_idx, scale=scale)
+        rel = f"Actors/{key}.png"
+        sp.write_to_png(str(UNITY_SPRITES_DIR / rel))
+        meta["path"] = f"Assets/HeistSim/Market2D/Sprites/{rel}"
+        manifest["actors"][key] = meta
+
+    manifest["props"] = {}
+    for prop_name in ("prop_cctv_panel", "prop_detagger", "prop_decoy_coin"):
+        sp, meta = render_prop_sprite(prop_name, scale=scale)
+        rel = f"Props/{prop_name}.png"
+        sp.write_to_png(str(UNITY_SPRITES_DIR / rel))
+        meta["path"] = f"Assets/HeistSim/Market2D/Sprites/{rel}"
+        manifest["props"][prop_name] = meta
+
+    manifest["uiBadges"] = {}
+    for badge_name in (
+        "role_patrol",
+        "role_pursuer",
+        "role_interceptor",
+        "role_sabotage",
+        "role_sweeper",
+        "icon_spirits_trophy",
+    ):
+        sp = render_ui_badge_sprite(badge_name)
+        rel = f"UI/{badge_name}.png"
+        sp.write_to_png(str(UNITY_SPRITES_DIR / rel))
+        manifest["uiBadges"][badge_name] = {"path": f"Assets/HeistSim/Market2D/Sprites/{rel}", "width": 64, "height": 64}
 
     # Export seamless 8x8 Bayer dither tiles for Unity UI Toolkit progress bars & highlights
     write_ui_dither_tile(str(ui_dir / "dither_coral.png"), "coral", 0.72, bg_paper=True)
@@ -411,7 +526,8 @@ def cmd_export_unity(scale: int = 2) -> None:
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print(
         f"Exported {len(manifest['fixtures'])} fixture sprites, "
-        f"{len(manifest['rooms'])} rooms, {len(manifest['actors'])} actors -> {UNITY_SPRITES_DIR}"
+        f"{len(manifest['rooms'])} rooms, {len(manifest['actors'])} actors, "
+        f"{len(manifest['props'])} props, {len(manifest['uiBadges'])} badges -> {UNITY_SPRITES_DIR}"
     )
 
 

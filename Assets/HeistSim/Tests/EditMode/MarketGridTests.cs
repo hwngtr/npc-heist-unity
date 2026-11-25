@@ -37,7 +37,61 @@ namespace HeistSim.Tests
         [Test]
         public void BlockedTileCountMatchesTheBrowserGame()
         {
-            Assert.That(MarketGrid.BlockedTiles().Count, Is.EqualTo(225), "225 tiles are covered by solid fixtures after room decongestion");
+            Assert.That(MarketGrid.BlockedTiles().Count, Is.EqualTo(199), "199 tiles are covered by solid fixtures after quadrant expressway reorganization");
+        }
+
+        [Test]
+        public void EveryWalkableInteriorTileIsReachableAndDoorwayVestibulesStayClear()
+        {
+            var blocked = MarketGrid.BlockedTiles();
+            foreach (var room in MarketData.Rooms)
+            {
+                for (var ly = 0; ly < room.Depth; ly++)
+                {
+                    for (var lx = 0; lx < room.Width; lx++)
+                    {
+                        var gx = room.OriginI + lx;
+                        var gy = room.OriginJ + ly;
+                        var touchesDoorway = (lx == 0 && gx > 0 && ly >= 3 && ly <= 5)
+                            || (lx == room.Width - 1 && gx + 1 < Grid.Width && ly >= 3 && ly <= 5)
+                            || (ly == 0 && gy > 0 && lx >= 3 && lx <= 5)
+                            || (ly == room.Depth - 1 && gy + 1 < Grid.Height && lx >= 3 && lx <= 5);
+                        if (touchesDoorway)
+                        {
+                            Assert.That(blocked.Contains(new GridPos(gx, gy)), Is.False,
+                                $"{room.Id} doorway vestibule ({gx},{gy}) must not be blocked by a solid fixture");
+                        }
+                    }
+                }
+            }
+
+            var start = MarketGrid.TileOf(MarketData.Entrance.I, MarketData.Entrance.J);
+            var reachable = new HashSet<GridPos> { start };
+            var queue = new Queue<GridPos>();
+            queue.Enqueue(start);
+            while (queue.Count > 0)
+            {
+                var cur = queue.Dequeue();
+                foreach (var next in Grid.Neighbors(cur.X, cur.Y))
+                {
+                    if (reachable.Add(next))
+                    {
+                        queue.Enqueue(next);
+                    }
+                }
+            }
+
+            for (var y = 0; y < Grid.Height; y++)
+            {
+                for (var x = 0; x < Grid.Width; x++)
+                {
+                    if (Grid.IsWalkable(x, y))
+                    {
+                        Assert.That(reachable.Contains(new GridPos(x, y)), Is.True,
+                            $"Walkable tile ({x},{y}) must be reachable from Entrance (0 trapped pockets)");
+                    }
+                }
+            }
         }
 
         [Test]
@@ -158,6 +212,49 @@ namespace HeistSim.Tests
             }
 
             AssertPathUsesOnlyDoorwayCrossings(best);
+        }
+
+        [Test]
+        public void AllHorizontalAndVerticalExpresswaysAndCentralHubsAreCompletelyClear()
+        {
+            var blocked = MarketGrid.BlockedTiles();
+            int[] horizontalExpressways = { 4, 13, 22 };
+            foreach (var y in horizontalExpressways)
+            {
+                for (var x = 1; x < Grid.Width - 1; x++)
+                {
+                    Assert.That(blocked.Contains(new GridPos(x, y)), Is.False,
+                        $"Horizontal expressway y={y} must not be blocked at ({x},{y})");
+                    Assert.That(Grid.IsWalkable(x, y), Is.True,
+                        $"Horizontal expressway tile ({x},{y}) must be walkable");
+                }
+            }
+
+            int[] verticalExpressways = { 4, 13, 22, 31 };
+            foreach (var x in verticalExpressways)
+            {
+                for (var y = 1; y < Grid.Height - 1; y++)
+                {
+                    Assert.That(blocked.Contains(new GridPos(x, y)), Is.False,
+                        $"Vertical expressway x={x} must not be blocked at ({x},{y})");
+                    Assert.That(Grid.IsWalkable(x, y), Is.True,
+                        $"Vertical expressway tile ({x},{y}) must be walkable");
+                }
+            }
+
+            foreach (var room in MarketData.Rooms)
+            {
+                for (var ly = 3; ly <= 5; ly++)
+                {
+                    for (var lx = 3; lx <= 5; lx++)
+                    {
+                        var gx = room.OriginI + lx;
+                        var gy = room.OriginJ + ly;
+                        Assert.That(blocked.Contains(new GridPos(gx, gy)), Is.False,
+                            $"{room.Id} central hub tile ({gx},{gy}) must remain clear");
+                    }
+                }
+            }
         }
 
         private static void AssertPathUsesOnlyDoorwayCrossings(List<GridPos> path)

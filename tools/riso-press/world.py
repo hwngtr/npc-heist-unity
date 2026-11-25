@@ -50,17 +50,21 @@ def shadow_box(
     height: float,
     tone: float = 0.20,
 ) -> None:
-    k = min(height, 2.0) * 0.45
-    pts = [
-        (p[0] + 4.0, p[1] + 2.0)
-        for p in (
-            h.p(i + k, j + k * 0.5, z),
-            h.p(i + w + k, j + k * 0.5, z),
-            h.p(i + w + k, j + d + k * 0.5, z),
-            h.p(i + k, j + d + k * 0.5, z),
-        )
+    z_floor = 0.0 if z <= 0.05 else z
+    k = min(height, 2.0) * 0.36
+    cast_pts = [
+        h.p(i, j, z_floor),
+        h.p(i + w, j, z_floor),
+        h.p(i + w + k, j + k * 0.5, z_floor),
+        h.p(i + w + k, j + d + k * 0.5, z_floor),
+        h.p(i + k, j + d + k * 0.5, z_floor),
+        h.p(i, j + d, z_floor),
     ]
-    h.tint(pts, "blue", tone, over_transparent=h.transparent_sprite)
+    h.tint(cast_pts, "blue", tone, over_transparent=h.transparent_sprite)
+
+    pad = 0.06
+    ao_pts = h.tile(i - pad, j - pad, w + 2.0 * pad, d + 2.0 * pad, z_floor)
+    h.tint(ao_pts, "blue", min(0.40, tone * 1.65), over_transparent=h.transparent_sprite)
 
 
 def box_at(
@@ -114,6 +118,8 @@ def box_at(
         h.outline(rng, top, "blue", w=lw, tone=0.9, amp=0.15, fine=fine)
         h.line(rng, [top[3], sw[0], sw[1], se[1], top[2]], "blue", w=lw, tone=0.9, amp=0.15, fine=fine)
         h.line(rng, [top[2], sw[1]], "blue", w=lw, tone=0.9, amp=0.15, fine=fine)
+        if z <= 0.02:
+            h.line(rng, [sw[0], sw[1], se[1]], "blue", w=lw * 1.30, tone=0.96, amp=0.08, fine=fine)
 
     return {"top": top, "se": se, "sw": sw}
 

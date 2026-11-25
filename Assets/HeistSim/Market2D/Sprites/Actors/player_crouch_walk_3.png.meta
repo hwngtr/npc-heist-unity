@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: e8cbb532d7ddd45e3ac83ef35ad7e76f
+guid: 52601f73e5ab8a399abf75c7f2480ceb
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 1696823866382390960
-    second: lowwall_nw_0
+      213: -5256712271732060016
+    second: player_crouch_walk_3_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -50,7 +50,7 @@ TextureImporter:
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 9
-  spritePivot: {x: 0.88435376, y: 0.62608695}
+  spritePivot: {x: 0.5, y: 0.2173913}
   spritePixelsToUnits: 128
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
@@ -115,13 +115,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: lowwall_nw_0
+      name: player_crouch_walk_3_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 294
-        height: 230
+        width: 144
+        height: 184
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -130,8 +130,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 0b6902af0545c8710800000000000000
-      internalID: 1696823866382390960
+      spriteID: 09059f44a086c07b0800000000000000
+      internalID: -5256712271732060016
       vertices: []
       indices: 
       edges: []

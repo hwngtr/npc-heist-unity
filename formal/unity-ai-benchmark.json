@@ -7,13 +7,13 @@
     "extensibilityCostAddNewBehavior": { "fsmEdgesModified": 6, "btNodesInserted": 2 }
   },
   "runs": [
-    { "profile": "standard", "arch": "FSM", "ticks": 5000, "usPerTick": 32.37, "transitions": 66, "detections": 22 },
-    { "profile": "standard", "arch": "BT", "ticks": 5000, "usPerTick": 33.99, "transitions": 66, "detections": 22 },
-    { "profile": "aggressive", "arch": "FSM", "ticks": 5000, "usPerTick": 31.48, "transitions": 70, "detections": 11 },
-    { "profile": "aggressive", "arch": "BT", "ticks": 5000, "usPerTick": 37.23, "transitions": 70, "detections": 11 },
-    { "profile": "cautious", "arch": "FSM", "ticks": 5000, "usPerTick": 21.91, "transitions": 118, "detections": 7 },
-    { "profile": "cautious", "arch": "BT", "ticks": 5000, "usPerTick": 27.31, "transitions": 48, "detections": 9 },
-    { "profile": "observant", "arch": "FSM", "ticks": 5000, "usPerTick": 41.03, "transitions": 55, "detections": 11 },
-    { "profile": "observant", "arch": "BT", "ticks": 5000, "usPerTick": 38.32, "transitions": 55, "detections": 11 }
+    { "profile": "standard", "arch": "FSM", "ticks": 5000, "usPerTick": 22.66, "transitions": 66, "detections": 11 },
+    { "profile": "standard", "arch": "BT", "ticks": 5000, "usPerTick": 24.40, "transitions": 66, "detections": 11 },
+    { "profile": "aggressive", "arch": "FSM", "ticks": 5000, "usPerTick": 18.80, "transitions": 67, "detections": 11 },
+    { "profile": "aggressive", "arch": "BT", "ticks": 5000, "usPerTick": 21.69, "transitions": 67, "detections": 11 },
+    { "profile": "cautious", "arch": "FSM", "ticks": 5000, "usPerTick": 32.86, "transitions": 107, "detections": 7 },
+    { "profile": "cautious", "arch": "BT", "ticks": 5000, "usPerTick": 34.83, "transitions": 35, "detections": 7 },
+    { "profile": "observant", "arch": "FSM", "ticks": 5000, "usPerTick": 20.34, "transitions": 66, "detections": 11 },
+    { "profile": "observant", "arch": "BT", "ticks": 5000, "usPerTick": 23.35, "transitions": 66, "detections": 11 }
   ]
 }

@@ -10,6 +10,9 @@ namespace HeistSim.Market2D
     [DisallowMultipleComponent]
     public sealed class Market2DAudio : MonoBehaviour
     {
+        /// <summary>Minimum unscaled seconds between alert sting audio pulses to avoid rapid stacking.</summary>
+        public const float MinAlertIntervalSeconds = 1.2f;
+
         private const int SampleRate = 22050;
 
         /// <summary>Master SFX gain scalar (0..1).</summary>
@@ -32,6 +35,7 @@ namespace HeistSim.Market2D
         private AudioClip _ambientClip;
         private bool _muted;
         private bool _initialized;
+        private float _lastAlertTime = -99f;
 
         /// <summary>True when audio output is muted by the player.</summary>
         public bool Muted
@@ -102,10 +106,23 @@ namespace HeistSim.Market2D
             PlayOneShot(_unlockClip, 0.90f, 1.0f);
         }
 
-        /// <summary>Plays a detective sighting or EAS alarm warning pulse.</summary>
-        public void PlayAlert()
+        /// <summary>Plays a detective sighting or EAS alarm warning pulse (rate-limited unless forced).</summary>
+        public void PlayAlert(bool force = false)
         {
-            PlayOneShot(_alertClip, 0.92f, 1.0f);
+            var now = Time.unscaledTime;
+            if (!force && now - _lastAlertTime < MinAlertIntervalSeconds)
+            {
+                return;
+            }
+
+            _lastAlertTime = now;
+            PlayOneShot(_alertClip, 0.78f, 1.0f);
+        }
+
+        /// <summary>Resets rate-limited audio cooldowns at the start of a new shift.</summary>
+        public void ResetCooldowns()
+        {
+            _lastAlertTime = -99f;
         }
 
         /// <summary>Plays a brief low refusal tone.</summary>
